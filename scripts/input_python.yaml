@@ -1,0 +1,7 @@
+# This file contains all the output directories where the processed data is stored by the main running script
+
+#### DO NOT CHANGE THE VARIABLE NAMES ####
+
+Level0_dir: "data/Level0/"
+Level1_dir: "data/Level1/"
+Level2_dir: "data/Level2/"

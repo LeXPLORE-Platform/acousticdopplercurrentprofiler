@@ -1,0 +1,8 @@
+[{ "start": "20200101",
+  "end": "now",
+  "data": {"300" : {"bandwidth": "300", "transducer_depth": 8, "bottom_depth": 110, "up": "False", "irt": 144,
+                 "rotate_velocity": 0, "cabled": "True"},
+            "600" : {"bandwidth": "600", "transducer_depth": 8, "bottom_depth": 110, "up": "True", "irt": 144,
+                  "rotate_velocity": 0, "cabled": "True"}} }]
+
+

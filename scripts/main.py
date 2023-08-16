@@ -1,0 +1,49 @@
+# -*- coding: utf-8 -*-
+import os
+import sys
+import json
+import yaml
+from adcp import ADCP
+from functions import latest_files, all_files, log, select_parameters
+
+with open("scripts/input_python.yaml", "r") as f:
+    directories = yaml.load(f, Loader=yaml.FullLoader)
+    
+for directory in directories.values():
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+with open('scripts/parameters.json', 'r') as f:
+    parameter_dict = json.load(f)
+
+if len(sys.argv) == 1:
+    files_300 = all_files(directories["Level0_dir"], "RDI300")
+    files_600 = all_files(directories["Level0_dir"], "RDI600")
+    log("Reprocessing complete dataset.")
+
+elif len(sys.argv) == 2 and str(sys.argv[1]) == "live":
+    files_300 = latest_files(directories["Level0_dir"], "RDI300")
+    files_600 = latest_files(directories["Level0_dir"], "RDI600")
+    log("Live processing recent data.")
+else:
+    raise ValueError()
+
+for file in files_300:
+    a = ADCP()
+    p = select_parameters(file, parameter_dict)
+    a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"])
+    a.quality_flags("./quality_assurance.json")
+    a.to_netcdf(os.path.join(directories["Level1_dir"], "RDI300"), "L1")
+    a.mask_data()
+    a.derive_variables(p["rotate_velocity"])
+    a.to_netcdf(os.path.join(directories["Level2_dir"], "RDI300"), "L2")
+
+for file in files_600:
+    a = ADCP()
+    p = select_parameters(file, parameter_dict)
+    a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"])
+    a.quality_flags("./quality_assurance.json")
+    a.to_netcdf(os.path.join(directories["Level1_dir"], "RDI600"), "L1")
+    a.mask_data()
+    a.derive_variables(p["rotate_velocity"])
+    a.to_netcdf(os.path.join(directories["Level2_dir"], "RDI600"), "L2")
