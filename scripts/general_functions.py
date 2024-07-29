@@ -4,7 +4,6 @@ import copy
 import json
 import ftplib
 import netCDF4
-import requests
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -414,35 +413,6 @@ def advanced_quality_flags(ds, json_path, log, time_label="time"):
             data[np.array(ds[var + "_qual"].values) > 0] = np.nan
             advanced = qualityassurance(data, np.array(ds[time_label]), **quality_assurance_dict[var]["advanced"])
             ds[var + "_qual"][advanced > 0] = 1
-    return ds
-
-
-def event_quality_flags(ds, datalakes, events, log, time_label="time"):
-    log.info("Applying manual timeseries checks.", indent=2)
-    df = pd.read_csv(events, sep=";")
-    df["start"] = df["start"].apply(lambda l: datetime.timestamp(datetime.strptime(l, '%Y%m%d %H:%M:%S').replace(tzinfo=timezone.utc)))
-    df["stop"] = df["stop"].apply(lambda l: datetime.timestamp(datetime.strptime(l, '%Y%m%d %H:%M:%S').replace(tzinfo=timezone.utc)))
-    for id in datalakes:
-        x = requests.get("https://api.datalakes-eawag.ch/maintenance/"+str(id))
-        if x.status_code == 200:
-            for e in x.json():
-                df.loc[len(df)] = [datetime.timestamp(datetime.strptime(e["starttime"], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)),
-                                   datetime.timestamp(datetime.strptime(e["endtime"], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)),
-                                   e["parseparameter"],
-                                   e["description"]]
-
-    time = ds.variables["time"][:]
-    for index, row in df.iterrows():
-        idx = np.where(np.logical_and(time >= int(row["start"]), time <= int(row["stop"])))
-        if row["parameter"] == "All":
-            for var in ds.variables.keys():
-                if "_qual" in var and time_label not in var:
-                    ds.variables[var][:][idx] = 1
-        else:
-            if row["parameter"] + "_qual" in ds.variables.keys():
-                ds.variables[row["parameter"] + "_qual"][:][idx] = 1
-            else:
-                log.warning("Unable to find local parameter {} to apply event.".format(row["parameter"] + "_qual"))
     return ds
 
 
