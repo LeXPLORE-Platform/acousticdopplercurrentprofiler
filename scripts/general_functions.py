@@ -86,7 +86,7 @@ class GenericInstrument:
 #        except:
 #            self.log.error("Unable to apply QA file, this is likely due to bad formatting of the file.")
 
-    def export(self, folder, title, output_period="file", time_label="time", grid=False, overwrite=False):
+    def export(self, folder, title, output_period="file", time_label="time", grid=False, overwrite=False, overwrite_file=False):
         if grid:
             variables = self.grid_variables
             dimensions = self.grid_dimensions
@@ -129,7 +129,7 @@ class GenericInstrument:
             output_files.append(out_file)
             self.log.info("Writing {} data from {} until {} to NetCDF file {}".format(title, file_start, file_end, filename), indent=2)
 
-            if not os.path.isfile(out_file):
+            if not os.path.isfile(out_file) or overwrite_file:
                 self.log.info("Creating new file.", indent=3)
                 with netCDF4.Dataset(out_file, mode='w', format='NETCDF4') as nc:
                     for key in self.general_attributes:
@@ -200,6 +200,8 @@ class GenericInstrument:
                             order = np.argsort(combined_time)
                             nc_copy = copy_variables(nc.variables)
                             for key, values in self.variables.items():
+                                print(key)
+                                print(len(nc_copy[key][:]), len(data[key]), len(valid))
                                 combined = np.append(nc_copy[key][:], np.array(data[key])[valid])
                                 if overwrite:
                                     print(len(combined), len(time))

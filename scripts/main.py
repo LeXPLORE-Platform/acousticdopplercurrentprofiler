@@ -33,17 +33,17 @@ for file in files_300:
     p = select_parameters(file, parameter_dict)
     if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"]):
         a.quality_flags("./quality_assurance.json")
-        a.export(os.path.join(directories["Level1_dir"], "RDI300"), "L1", output_period="file")
+        a.export(os.path.join(directories["Level1_dir"], "RDI300"), "L1", output_period="file", overwrite_file=True)
         a.mask_data()
         a.derive_variables(p["rotate_velocity"])
-        a.export(os.path.join(directories["Level2_dir"], "RDI300"), "L2", output_period="file")
+        a.export(os.path.join(directories["Level2_dir"], "RDI300"), "L2", output_period="file", overwrite_file=True)
 
 for file in files_600:
     a = ADCP()
     p = select_parameters(file, parameter_dict)
     if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"]):
         a.quality_flags("./quality_assurance.json")
-        a.export(os.path.join(directories["Level1_dir"], "RDI600"), "L1", output_period="file")
+        a.export(os.path.join(directories["Level1_dir"], "RDI600"), "L1", output_period="file", overwrite_file=True)
         a.mask_data()
         a.derive_variables(p["rotate_velocity"])
-        a.export(os.path.join(directories["Level2_dir"], "RDI600"), "L2", output_period="file")
+        a.export(os.path.join(directories["Level2_dir"], "RDI600"), "L2", output_period="file", overwrite_file=True)
