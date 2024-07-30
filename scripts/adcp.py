@@ -50,7 +50,7 @@ class ADCP(GenericInstrument):
         self.derived_variables = {
             'mU': {'var_name': 'mU', 'dim': ('time',), 'unit': 'm s-1', 'long_name': 'modulus of depth-averaged velocity'},
             'mdir': {'var_name': 'mdir', 'dim': ('time',), 'unit': 'deg', 'long_name': 'direction (anticlockwise from east) of depth-averaged velocity'},
-            'Sv': {'var_name': 'Sv', 'dim': ('depth', 'time'), 'unit': '%', 'long_name': 'absolute backscatter'}
+            'Sv': {'var_name': 'Sv', 'dim': ('depth', 'time'), 'unit': 'dB', 'long_name': 'absolute backscatter'}
         }
 
         self.data = {}
