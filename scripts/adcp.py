@@ -59,7 +59,8 @@ class ADCP(GenericInstrument):
         log("Parsing data from {}.".format(file))
         try:
             dlfn_data = dlfn.read(file)
-            date = np.array([mplt_datetime(t) for t in dlfn_data.mpltime], dtype='datetime64[s]')
+            #date = np.array([mplt_datetime(t) for t in dlfn_data.mpltime], dtype='datetime64[s]') # dolfyn version <1.0
+            date= dlfn_data.time.data.astype('datetime64[s]')
             time = date.astype('int')
 
             if not isinstance(up, bool):
@@ -67,7 +68,8 @@ class ADCP(GenericInstrument):
             if not isinstance(cabled, bool):
                 cabled = bool(distutils.util.strtobool(cabled))
 
-            idx = np.where(np.nanmean(np.nanmean(dlfn_data.signal.corr/255.*100, axis=0), axis=0) > 20)[0]
+            #idx = np.where(np.nanmean(np.nanmean(dlfn_data.signal.corr/255.*100, axis=0), axis=0) > 20)[0] # dolfyn version <1.0
+            idx = np.where(np.nanmean(np.nanmean(dlfn_data.corr/255.*100, axis=0), axis=0) > 20)[0]
             start = date[idx[[0, -1]]]
 
             date_subset = []
@@ -84,44 +86,71 @@ class ADCP(GenericInstrument):
 
             time_subset = np.array(date_subset).astype('int')
             idx_subset = (time_subset[0] < time) & (time < time_subset[1])
-            dlfn_data = dlfn_data.subset[idx_subset]
-            dlfn_data.date = date[idx_subset]
-            dlfn_data.timestamp = time[idx_subset]
-            dlfn_data.transducer_depth = transducer_depth
-
-            self.general_attributes["Er"] = np.nanmin(dlfn_data.signal.echo.astype(float))
+            #dlfn_data = dlfn_data.subset[idx_subset] # dolfyn version <1.0
+            # dlfn_data.date = date[idx_subset]
+            # dlfn_data.timestamp = time[idx_subset]
+            # dlfn_data.transducer_depth = transducer_depth
+            
+            # Create a new dataset with the subset data:
+            dlfn_subset=xr.Dataset(coords={key: value.values for key, value in dlfn_data.coords.items() if key != "time"})
+            dlfn_subset=dlfn_subset.expand_dims({"time":dlfn_data.time.values[idx_subset]})
+            dlfn_subset=dlfn_subset.assign(timestamp=(["time"],time[idx_subset]))
+            for var in dlfn_data.variables:
+                dimvar=list(dlfn_data[var].dims)
+                if "time" in dimvar:
+                    print(var)
+                    dlfn_subset=dlfn_subset.assign({var:(dimvar,dlfn_data[var].isel(time=idx_subset).values)})
+            #self.general_attributes["Er"] = np.nanmin(dlfn_data.signal.echo.astype(float)) # dolfyn version <1.0
+            self.general_attributes["Er"] = np.nanmin(dlfn_subset.amp.values.astype(float))
             self.general_attributes["cabled"] = str(cabled)
             self.general_attributes["up"] = str(up)
             self.general_attributes["bottom_depth"] = bottom_depth
             self.general_attributes["transducer_depth"] = transducer_depth
-            self.general_attributes["beam_angle"] = float(dlfn_data.config.beam_angle)
-            self.general_attributes["xmit_length"] = float(dlfn_data.config.xmit_pulse)
-            self.general_attributes["beam_freq"] = float(dlfn_data.config.beam_freq_khz)
-
+            # self.general_attributes["beam_angle"] = float(dlfn_data.config.beam_angle) # dolfyn version <1.0
+            # self.general_attributes["xmit_length"] = float(dlfn_data.config.xmit_pulse) # dolfyn version <1.0
+            # self.general_attributes["beam_freq"] = float(dlfn_data.config.beam_freq_khz) # dolfyn version <1.0
+            self.general_attributes["beam_angle"] = float(dlfn_data.attrs["beam_angle"]) 
+            self.general_attributes["blank_dist"] = float(dlfn_data.attrs["blank_dist"])
+            self.general_attributes["beam_freq"] = float(dlfn_data.attrs["freq"])
+            
             if up:
-                z0 = transducer_depth - dlfn_data.range
+                z0 = transducer_depth - dlfn_subset.range.values
             else:
-                z0 = transducer_depth + dlfn_data.range
-            echo = dlfn_data.signal.echo.astype(float)
+                z0 = transducer_depth + dlfn_subset.range.values
+            #echo = dlfn_data.signal.echo.astype(float) # dolfyn version <1.0
+            echo = dlfn_subset.amp.values.astype(float)
             self.data["r"] = z0/np.cos(self.general_attributes["beam_angle"]*np.pi/180.)
-            self.data["eu"] = dlfn_data.vel[3, :, :]
-            self.data["corr"] = dlfn_data.signal.corr.astype(float)/255.
-            self.data["prcnt_gd"] = dlfn_data.signal.prcnt_gd.astype(float)
-            self.data["heading"] = dlfn_data.orient.raw.heading
-            self.data["roll"] = dlfn_data.orient.raw.roll
-            self.data["pitch"] = dlfn_data.orient.raw.pitch
-            self.data["time"] = np.array(dlfn_data.timestamp, dtype='float')
+            self.data["eu"] = dlfn_subset.vel[3, :, :].values # Velocity error
+            #self.data["corr"] = dlfn_data.signal.corr.astype(float)/255. # dolfyn version <1.0
+            #self.data["prcnt_gd"] = dlfn_data.signal.prcnt_gd.astype(float) # dolfyn version <1.0
+            # self.data["heading"] = dlfn_data.orient.raw.heading # dolfyn version <1.0
+            # self.data["roll"] = dlfn_data.orient.raw.roll # dolfyn version <1.0
+            # self.data["pitch"] = dlfn_data.orient.raw.pitch # dolfyn version <1.0
+            # self.data["time"] = np.array(dlfn_data.timestamp, dtype='float') # dolfyn version <1.0
+            self.data["corr"] = dlfn_subset.corr.values.astype(float)/255.
+            self.data["prcnt_gd"] = dlfn_subset.prcnt_gd.values.astype(float)
+            self.data["heading"] = dlfn_subset.heading.values
+            self.data["roll"] = dlfn_subset["roll"].values
+            self.data["pitch"] = dlfn_subset.pitch.values
+            self.data["time"] = dlfn_subset.timestamp.values.astype(float)
             self.data["depth"] = z0
-            self.data["u"] = dlfn_data.u
-            self.data["v"] = dlfn_data.v
-            self.data["w"] = dlfn_data.w
+            # self.data["u"] = dlfn_data.u # dolfyn version <1.0
+            # self.data["v"] = dlfn_data.v # dolfyn version <1.0
+            # self.data["w"] = dlfn_data.w # dolfyn version <1.0
+            self.data["u"] = dlfn_subset.vel[0, :, :].values # Eastward velocity
+            self.data["v"] = dlfn_subset.vel[1, :, :].values # Northward velocity
+            self.data["w"] = dlfn_subset.vel[2, :, :].values # Upward velocity
             self.data["echo"] = echo
             self.data["echo1"] = echo[0, :, :]
             self.data["echo2"] = echo[1, :, :]
             self.data["echo3"] = echo[2, :, :]
             self.data["echo4"] = echo[3, :, :]
-            self.data["battery"] = dlfn_data.sys.adc[1, :]
-            self.data["temp"] = dlfn_data.env.temperature_C
+            # self.data["battery"] = dlfn_data.sys.adc[1, :] # dolfyn version <1.0 # dolfyn version <1.0
+            # self.data["temp"] = dlfn_data.env.temperature_C # dolfyn version <1.0 # dolfyn version <1.0
+            # Battery and temperature_C not available in the new dolfyn version
+            self.data["battery"]=np.full(self.data["roll"].shape,np.nan)
+            self.data["temp"]=np.full(self.data["roll"].shape,np.nan)
+
             return True
         except:
             log("Failed to process {}.".format(file))
@@ -130,17 +159,17 @@ class ADCP(GenericInstrument):
     def quality_flags(self, file_path = './quality_assurance.json', simple=True):
 
         log("Performing quality assurance")
-        qa_adcp = self.quality_flags_adcp(mincor=0.3, maxcor=0.7, minpcg=50, errorfactor=1)
+        qa_adcp = self.quality_flags_adcp(mincor=0.3, maxcor=0.7, minpcg=50, errorfactor=1)  # Quality flags on u and v based on correlation, PG3 and velocity error
 
-        quality_assurance_dict = json_converter(json.load(open(file_path)))
+        quality_assurance_dict = json_converter(json.load(open(file_path))) # Load parameters related to simple and advanced quality checks
 
         for key, values in self.variables.copy().items():
             if (key in quality_assurance_dict):
-                name = key + "_qual"
+                name = key + "_qual" # Create a new variable _qual to flag the data
                 self.variables[name] = {'var_name': name, 'dim': values["dim"],
                                         'unit': '0 = nothing to report, 1 = more investigation',
                                         'long_name': name, }
-                if simple:
+                if simple: # Simple quality check only
                     self.data[name] = qualityassurance(np.array(self.data[key]), np.array(self.data["time"]), **quality_assurance_dict[key]["simple"])
                 else:
                     quality_assurance_all = dict(quality_assurance_dict[key]["simple"], **quality_assurance_dict[key]["advanced"])
@@ -150,16 +179,17 @@ class ADCP(GenericInstrument):
                     log("Specific ADCP check done for {}".format(key))
 
     def quality_flags_adcp(self, mincor, maxcor, minpcg, errorfactor):
+        # Quality flags on u and v based on correlation, PG3 and velocity error
         d1, d2, d3 = self.data["corr"].shape
         quality_flag = np.full((d2, d3), False)
-        for j in range(d3):
-            for i in range(d2):
+        for j in range(d3): # Each timestep
+            for i in range(d2): # Each depth
                 flg = 0
-                for k in range(d1):
+                for k in range(d1): # Each beam
                     cr = self.data["corr"][k, i, j]
                     if (cr < mincor) or (cr > maxcor):
                         flg += 1
-                pcg = self.data["prcnt_gd"][3, i, j]
+                pcg = self.data["prcnt_gd"][3, i, j] #PG4
                 if pcg < minpcg:
                     flg += 1
                 modW = np.sqrt(self.data["u"][i, j]**2 + self.data["v"][i, j]**2 + self.data["w"][i, j]**2)**0.5
