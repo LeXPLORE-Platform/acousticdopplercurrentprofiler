@@ -62,3 +62,6 @@ quality checks and further investigation is needed, quality flag "0" indicates t
 ## Quality assurance
 
 Quality checks include but are not limited to range validation, data type checking and flagging missing data.
+
+## Scripts
+*** Give information on which scripts do what here! + files in the main folder --> How to upload the data to datalakes?***
