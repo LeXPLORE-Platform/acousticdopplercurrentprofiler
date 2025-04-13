@@ -193,50 +193,41 @@ class ADCP(GenericInstrument):
     def quality_flags(self, file_path = './quality_assurance.json', simple=True):
 
         log("Performing quality assurance")
-        log("1. ADCP-specific quality checks",indent=1)
-        qa_adcp = self.quality_flags_adcp(mincor=0.3, maxcor=0.7, minpcg=50, errorfactor=1)  # Quality flags on u and v based on correlation, PG3 and velocity error
+        log("1. ADCP-specific quality checks",indent=1) # Additional ADCP tests on the velocity matrix, increases qa with a base-2 approach (check#2 returns 0 or 2, chech#3 returns 0 or 4, etc.)
+        qa_adcp=init_flag_adcp(np.array(self.data["u"])) # Initial qa array (zero values)
+        if self.general_attributes['up']=='True': # Upward looking: surface detection
+            qa_adcp=qa_adcp_interface_top(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],beam_angle=20)
+        else: # Downward looking: sediment detection
+            qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=20)
+            
+        qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"])
+        qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"])
+        qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"])
+        qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"])
+        qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"])
+        qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"])
+        qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"])
         
-        
-
-        log("2. envass quality checks",indent=1)
+        log("2. envass quality checks",indent=1) # Corresponds to quality check #1: qa is 0 (all good) or 1 (flagged)
         quality_assurance_dict = json_converter(json.load(open(file_path))) # Load parameters related to simple and advanced quality checks
-
+        
         for key, values in self.variables.copy().items():
             if (key in quality_assurance_dict):
                 name = key + "_qual" # Create a new variable _qual to flag the data
                 self.variables[name] = {'var_name': name, 'dim': values["dim"],
                                         'unit': '0 = nothing to report, 1 = more investigation',
                                         'long_name': name, }
+                if self.data[key].shape==qa_adcp.shape:
+                    prior_qa=qa_adcp
+                else:
+                    prior_qa=np.zeros(self.data[key].shape)
                 if simple: # Simple quality check only
-                    self.data[name] = qualityassurance(np.array(self.data[key]), np.array(self.data["time"]), **quality_assurance_dict[key]["simple"])
+                    self.data[name] = prior_qa+qualityassurance(np.array(self.data[key]), np.array(self.data["time"]), **quality_assurance_dict[key]["simple"])
                 else:
                     quality_assurance_all = dict(quality_assurance_dict[key]["simple"], **quality_assurance_dict[key]["advanced"])
-                    self.data[name] = qualityassurance(np.array(self.data[key]), np.array(self.data["time"]), **quality_assurance_all)
-                if key == "u" or key == "v":
-                    self.data[name][qa_adcp[key] > 0] = 1
-                    log("Specific ADCP check done for {}".format(key))
+                    self.data[name] = prior_qa+qualityassurance(np.array(self.data[key]), np.array(self.data["time"]), **quality_assurance_all)
+               
 
-    def quality_flags_adcp(self, mincor, maxcor, minpcg, errorfactor):
-        # Quality flags on u and v based on correlation, PG3 and velocity error
-        d1, d2, d3 = self.data["corr"].shape
-        quality_flag = np.full((d2, d3), False)
-        for j in range(d3): # Each timestep
-            for i in range(d2): # Each depth
-                flg = 0
-                for k in range(d1): # Each beam
-                    cr = self.data["corr"][k, i, j]
-                    if (cr < mincor) or (cr > maxcor):
-                        flg += 1
-                pcg = self.data["prcnt_gd"][3, i, j] #PG4
-                if pcg < minpcg:
-                    flg += 1
-                modW = np.sqrt(self.data["u"][i, j]**2 + self.data["v"][i, j]**2 + self.data["w"][i, j]**2)**0.5
-                if modW < errorfactor*np.abs(self.data["eu"][i, j]):
-                    flg += 1
-                if flg > 0:
-                    quality_flag[i, j] = True
-        qa_spe = {"u": quality_flag, "v": quality_flag}
-        return qa_spe
 
     def derive_variables(self, rotate_velocity):
         log("Computing derived variables.", indent=1)
@@ -255,6 +246,7 @@ class ADCP(GenericInstrument):
         log("Smooth data with moving average filter", indent=2)
         self.data["u"] = moving_average_filter(self.data["u"])
         self.data["v"] = moving_average_filter(self.data["v"])
+        self.data["w"] = moving_average_filter(self.data["w"])
 
         log("Absolute backscatter", indent=2)
         self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],
