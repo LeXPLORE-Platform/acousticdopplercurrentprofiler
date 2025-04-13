@@ -31,7 +31,7 @@ elif len(sys.argv) == 2 and str(sys.argv[1]) == "live": # Live data: process rec
 else:
     raise ValueError()
 
-files_300=["data/Level0/RDI300\\20230809\\L3002_000000.LTA"]
+files_300=[r"data/Level0/test\RDI300\20230809/L3002_000000.LTA"]
 files_600=[]
 
 for file in files_300:
