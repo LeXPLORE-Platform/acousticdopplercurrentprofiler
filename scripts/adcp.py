@@ -10,6 +10,7 @@ from datetime import datetime
 from envass import qualityassurance
 from dateutil.relativedelta import relativedelta
 from general_functions import GenericInstrument
+from quality_checks_adcp import *
 
 
 class ADCP(GenericInstrument):
@@ -36,11 +37,21 @@ class ADCP(GenericInstrument):
             'depth': {'var_name': 'depth', 'dim': ('depth',), 'unit': 'm', 'long_name': 'nominal depth'},
             'u': {'var_name': 'u', 'dim': ('depth', 'time'), 'unit': 'm s-1', 'long_name': 'eastern velocity'},
             'v': {'var_name': 'v', 'dim': ('depth', 'time'), 'unit': 'm s-1', 'long_name': 'northern velocty'},
+            'w': {'var_name': 'w', 'dim': ('depth', 'time'), 'unit': 'm s-1', 'long_name': 'upward velocty'},
             'temp': {'var_name': 'temp', 'dim': ('time',), 'unit': 'degC', 'long_name': 'temperature', },
+            'eu': {'var_name': 'vel_err', 'dim': ('depth', 'time'), 'unit': 'm s-1', 'long_name': 'velocity error', },
             'echo1': {'var_name': 'echo1', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 1 echo'},
             'echo2': {'var_name': 'echo2', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 2 echo'},
             'echo3': {'var_name': 'echo3', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 3 echo'},
             'echo4': {'var_name': 'echo4', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 4 echo'},
+            'corr1': {'var_name': 'corr1', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 1 correlation', },
+            'corr2': {'var_name': 'corr2', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 2 correlation', },
+            'corr3': {'var_name': 'corr3', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 3 correlation', },
+            'corr4': {'var_name': 'corr4', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 4 correlation', },
+            'prcnt_gd1': {'var_name': 'prcnt_gd1', 'dim': ('depth', 'time'), 'unit': '%', 'long_name': 'Percentage Good 1', },
+            'prcnt_gd2': {'var_name': 'prcnt_gd2', 'dim': ('depth', 'time'), 'unit': '%', 'long_name': 'Percentage Good 2', },
+            'prcnt_gd3': {'var_name': 'prcnt_gd3', 'dim': ('depth', 'time'), 'unit': '%', 'long_name': 'Percentage Good 3', },
+            'prcnt_gd4': {'var_name': 'prcnt_gd4', 'dim': ('depth', 'time'), 'unit': '%', 'long_name': 'Percentage Good 4', },
             'battery': {'var_name': 'battery', 'dim': ('time',), 'unit': '-', 'long_name': 'Battery level'},
             'heading': {'var_name': 'heading', 'dim': ('time',), 'unit': 'deg', 'long_name': 'Heading'},
             'roll': {'var_name': 'roll', 'dim': ('time',), 'unit': 'deg', 'long_name': 'Roll'},
@@ -55,8 +66,22 @@ class ADCP(GenericInstrument):
 
         self.data = {}
 
-    def read_data(self, file, transducer_depth=0.65, bottom_depth=110., cabled=False, up=False, **kwargs):
+    def read_data(self, file, transducer_depth, bottom_depth=110., cabled=False, up=False, **kwargs):
+        """
+        Read the ADCP data and store it in an ADCP object.
+
+        Parameters:
+            file (str): path and ADCP filename (e.g., .LTA file)
+            transducer_depth (float): depth of the ADCP [m]
+            bottom_depth (float): total lake depth [m] (default: lake depth at the LéXPLORE platform)
+            cabled (bool): =True is the ADCP is cable-linked, =False otherwise
+            up (bool): =True is the ADCP is upward-looking, =False if the ADCP is downward-looking
+        Returns:
+            True if the data was correctly read, False otherwise
+        """
+        
         log("Parsing data from {}.".format(file))
+
         try:
             dlfn_data = dlfn.read(file)
             #date = np.array([mplt_datetime(t) for t in dlfn_data.mpltime], dtype='datetime64[s]') # dolfyn version <1.0
@@ -107,8 +132,9 @@ class ADCP(GenericInstrument):
             self.general_attributes["bottom_depth"] = bottom_depth
             self.general_attributes["transducer_depth"] = transducer_depth
             # self.general_attributes["beam_angle"] = float(dlfn_data.config.beam_angle) # dolfyn version <1.0
-            # self.general_attributes["xmit_length"] = float(dlfn_data.config.xmit_pulse) # dolfyn version <1.0
+            # self.general_attributes["xmit_length"] = float(dlfn_data.config.xmit_pulse) # transmit pulse length used for backscattering calculation, dolfyn version <1.0
             # self.general_attributes["beam_freq"] = float(dlfn_data.config.beam_freq_khz) # dolfyn version <1.0
+            self.general_attributes["xmit_length"] = float(dlfn_data.attrs["transmit_pulse_m"]) # transmit pulse length [m] used for backscattering calculation 
             self.general_attributes["beam_angle"] = float(dlfn_data.attrs["beam_angle"]) 
             self.general_attributes["blank_dist"] = float(dlfn_data.attrs["blank_dist"])
             self.general_attributes["beam_freq"] = float(dlfn_data.attrs["freq"])
@@ -128,7 +154,15 @@ class ADCP(GenericInstrument):
             # self.data["pitch"] = dlfn_data.orient.raw.pitch # dolfyn version <1.0
             # self.data["time"] = np.array(dlfn_data.timestamp, dtype='float') # dolfyn version <1.0
             self.data["corr"] = dlfn_subset.corr.values.astype(float)/255.
+            self.data["corr1"] = self.data["corr"][0, :, :]
+            self.data["corr2"] = self.data["corr"][1, :, :]
+            self.data["corr3"] = self.data["corr"][2, :, :]
+            self.data["corr4"] = self.data["corr"][3, :, :]
             self.data["prcnt_gd"] = dlfn_subset.prcnt_gd.values.astype(float)
+            self.data["prcnt_gd1"] = self.data["prcnt_gd"][0, :, :]
+            self.data["prcnt_gd2"] = self.data["prcnt_gd"][1, :, :]
+            self.data["prcnt_gd3"] = self.data["prcnt_gd"][2, :, :]
+            self.data["prcnt_gd4"] = self.data["prcnt_gd"][3, :, :]
             self.data["heading"] = dlfn_subset.heading.values
             self.data["roll"] = dlfn_subset["roll"].values
             self.data["pitch"] = dlfn_subset.pitch.values
@@ -159,8 +193,12 @@ class ADCP(GenericInstrument):
     def quality_flags(self, file_path = './quality_assurance.json', simple=True):
 
         log("Performing quality assurance")
+        log("1. ADCP-specific quality checks",indent=1)
         qa_adcp = self.quality_flags_adcp(mincor=0.3, maxcor=0.7, minpcg=50, errorfactor=1)  # Quality flags on u and v based on correlation, PG3 and velocity error
+        
+        
 
+        log("2. envass quality checks",indent=1)
         quality_assurance_dict = json_converter(json.load(open(file_path))) # Load parameters related to simple and advanced quality checks
 
         for key, values in self.variables.copy().items():
