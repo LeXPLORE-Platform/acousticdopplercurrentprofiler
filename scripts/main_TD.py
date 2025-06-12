@@ -33,10 +33,14 @@ else:
     raise ValueError()
 
 
-files_300=[]
+#files_300=[]
 #files_600=[r"data/Level0/test\RDI600\20230809/L3002_000000.LTA"]
+#files_600=[];
 
+counter=0
 for file in files_300:
+    counter+=1
+    print("File 300 {}/{} ({:.2f}%)".format(counter,len(files_300),counter/len(files_300)*100))
     a = ADCP()
     p = select_parameters(file, parameter_dict) # Get the parameters corresponding to the specific deployment period
     if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"]): # Read the raw data 
@@ -46,7 +50,10 @@ for file in files_300:
         a.derive_variables(p["rotate_velocity"]) # Compute additional variables to add to Level 2
         a.export(os.path.join(directories["Level2_dir"], "RDI300"), "L2", output_period="file", overwrite_file=True) # Create Level 2 file
 
+counter=0
 for file in files_600:
+    counter+=1
+    print("File 600 {}/{} ({:.2f}%)".format(counter,len(files_300),counter/len(files_300)*100))
     a = ADCP()
     p = select_parameters(file, parameter_dict)
     if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"]):

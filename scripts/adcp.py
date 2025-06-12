@@ -200,13 +200,13 @@ class ADCP(GenericInstrument):
         else: # Downward looking: sediment detection
             qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=20)
             
-        qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"])
-        qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"])
-        qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"])
-        qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"])
-        qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"])
-        qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"])
-        qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"])
+        qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],corr_threshold=64)
+        qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"],percentage_threshold=25)
+        qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"],percentage_threshold=25)
+        qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"],vel_threshold=0.07)
+        qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"],tilt_threshold=15)
+        qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],std_threshold=0.02)
+        qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"],diff_threshold=30)
         
         log("2. envass quality checks",indent=1) # Corresponds to quality check #1: qa is 0 (all good) or 1 (flagged)
         quality_assurance_dict = json_converter(json.load(open(file_path))) # Load parameters related to simple and advanced quality checks
@@ -249,10 +249,11 @@ class ADCP(GenericInstrument):
         self.data["w"] = moving_average_filter(self.data["w"])
 
         log("Absolute backscatter", indent=2)
-        self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],
-                                               self.general_attributes["beam_freq"],
-                                               self.general_attributes["beam_angle"],
-                                               bool(distutils.util.strtobool(self.general_attributes["cabled"])),
-                                               self.data["depth"], self.data["r"],
-                                               self.general_attributes["xmit_length"], self.data["battery"],
-                                               self.general_attributes["Er"])
+        # self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],
+        #                                        self.general_attributes["beam_freq"],
+        #                                        self.general_attributes["beam_angle"],
+        #                                        bool(distutils.util.strtobool(self.general_attributes["cabled"])),
+        #                                        self.data["depth"], self.data["r"],
+        #                                        self.general_attributes["xmit_length"], self.data["battery"],
+        #                                        self.general_attributes["Er"])
+        self.data["Sv"] = np.mean(self.data["echo"], axis=0)
