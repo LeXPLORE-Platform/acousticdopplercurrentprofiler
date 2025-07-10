@@ -43,7 +43,6 @@ for file in files_600:
     a = ADCP()
     p = select_parameters(file, parameter_dict)
     if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"]):
-        breakpoint()
         a.quality_flags("./quality_assurance.json")
         a.export(os.path.join(directories["Level1_dir"], "RDI600"), "L1", output_period="file", overwrite_file=True)
         a.mask_data()
