@@ -76,6 +76,11 @@ class ADCP(GenericInstrument):
             bottom_depth (float): total lake depth [m] (default: lake depth at the LéXPLORE platform)
             cabled (bool): =True is the ADCP is cable-linked, =False otherwise
             up (bool): =True is the ADCP is upward-looking, =False if the ADCP is downward-looking
+    
+        Additional arguments (**kwargs):
+            start_date (str, %Y%m%d %H:%M format): starting time of the period to extract
+            end_date (str, %Y%m%d %H:%M format): end time of the period to extract
+            
         Returns:
             True if the data was correctly read, False otherwise
         """
@@ -93,6 +98,8 @@ class ADCP(GenericInstrument):
             if not isinstance(cabled, bool):
                 cabled = bool(distutils.util.strtobool(cabled))
 
+            # Define the measurement period either from correlation>20% or from specified start and end dates:
+                
             #idx = np.where(np.nanmean(np.nanmean(dlfn_data.signal.corr/255.*100, axis=0), axis=0) > 20)[0] # dolfyn version <1.0
             idx = np.where(np.nanmean(np.nanmean(dlfn_data.corr/255.*100, axis=0), axis=0) > 20)[0]
             start = date[idx[[0, -1]]]
