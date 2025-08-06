@@ -3,5 +3,5 @@
 #### DO NOT CHANGE THE VARIABLE NAMES ####
 
 Level0_dir: "data/Level0"
-Level1_dir: "data/Level1/test"
-Level2_dir: "data/Level2/test"
+Level1_dir: "data/Level1"
+Level2_dir: "data/Level2"
