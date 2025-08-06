@@ -60,8 +60,8 @@ class ADCP(GenericInstrument):
 
         self.derived_variables = {
             'mU': {'var_name': 'mU', 'dim': ('time',), 'unit': 'm s-1', 'long_name': 'modulus of depth-averaged velocity'},
-            'mdir': {'var_name': 'mdir', 'dim': ('time',), 'unit': 'deg', 'long_name': 'direction (anticlockwise from east) of depth-averaged velocity'},
-            'Sv': {'var_name': 'Sv', 'dim': ('depth', 'time'), 'unit': 'dB', 'long_name': 'absolute backscatter'}
+            'mdir': {'var_name': 'mdir', 'dim': ('time',), 'unit': 'deg', 'long_name': 'direction (anticlockwise from east) of depth-averaged velocity'}
+            #'Sv': {'var_name': 'Sv', 'dim': ('depth', 'time'), 'unit': 'dB', 'long_name': 'absolute backscatter'}
         }
 
         self.data = {}
@@ -187,10 +187,10 @@ class ADCP(GenericInstrument):
             self.data["echo3"] = echo[2, :, :]
             self.data["echo4"] = echo[3, :, :]
             # self.data["battery"] = dlfn_data.sys.adc[1, :] # dolfyn version <1.0 # dolfyn version <1.0
-            # self.data["temp"] = dlfn_data.env.temperature_C # dolfyn version <1.0 # dolfyn version <1.0
-            # Battery and temperature_C not available in the new dolfyn version
+            # Battery not available in the new dolfyn version
             self.data["battery"]=np.full(self.data["roll"].shape,np.nan)
-            self.data["temp"]=np.full(self.data["roll"].shape,np.nan)
+            # self.data["temp"] = dlfn_data.env.temperature_C # dolfyn version <1.0 # dolfyn version <1.0
+            self.data["temp"]=dlfn_subset.temp.values
 
             return True
         except:
@@ -273,7 +273,7 @@ class ADCP(GenericInstrument):
         self.data["v"] = moving_average_filter(self.data["v"])
         self.data["w"] = moving_average_filter(self.data["w"])
 
-        log("Absolute backscatter", indent=2)
+        #log("Absolute backscatter", indent=2)
         # self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],
         #                                        self.general_attributes["beam_freq"],
         #                                        self.general_attributes["beam_angle"],
@@ -281,4 +281,3 @@ class ADCP(GenericInstrument):
         #                                        self.data["depth"], self.data["r"],
         #                                        self.general_attributes["xmit_length"], self.data["battery"],
         #                                        self.general_attributes["Er"])
-        self.data["Sv"] = np.mean(self.data["echo"], axis=0)
