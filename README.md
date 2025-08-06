@@ -143,6 +143,7 @@ quality checks and further investigation is needed (see section [quality assuran
     * heading angle (rotation around z-axis, 0° if beam #3 is facing north), *heading* (time) [°]
     * depth-averaged velocity magnitude, *mU* (time) [m s^(-1)]
     * direction of depth-averaged velocity (anticlockwise from east), *mdir* (time) [°]
+* Variables to be added in the future: 
     * absolute backscatter, *Sv* (depth,time) [dB]
 
 An example of visualisation of the Netcdf files is provided as a Jupyter Notebook (`notebooks/vis_adcp.ipynb`)
