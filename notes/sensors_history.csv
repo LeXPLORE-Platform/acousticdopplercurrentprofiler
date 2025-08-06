@@ -1,0 +1,10 @@
+Date;Time(UTC);Type ;Type;Parameters;model;S/N;Comments;Operator;miscellaneous
+22.07.2020;10:12:00;Installation;Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515;Deployment;S�bastien Lavanchy;ADCP_Installation schematics.pdf, ADCP_installation.jpg
+22.07.2020;10:12:00;Installation;Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360;Deployment;S�bastien Lavanchy;ADCP_Installation schematics.pdf, ADCP_installation.jpg
+24.07.2020;10:15:00;Installation;Workhorse Sentinel ADCP;all;all;all;Online vmdas;Bieito Fernandez;RDI300_vmdas.ini, RDI600_vmdas.ini
+25.06.2021;7:29:00;Issue;Workhorse Sentinel ADCP;all;all;all;ADCP caught in sedtrap line;Guillaume Cunillera;ADCP_sedtrap.jpg
+25.06.2021;12:00:00;Maintenance;Workhorse Sentinel ADCP;all;all;all;Clean biofouling + quagga;Guillaume Cunillera;ADCP_quagga.jpg
+25.06.2021;17:33:00;Repair;Workhorse Sentinel ADCP;all;all;all;ADCP back to water;S�bastien Lavanchy;
+31.08.2021;6:07:00;Issue;Workhorse Sentinel ADCP;all;all;all;cable of the ADCP damaged;Philippe Quetin;
+02.09.2021;16:25:00;Repair;Workhorse Sentinel ADCP;all;all;all;repaired and molded;Guillaume Cunillera;ADCP_mold.jpg
+31.05.2022;14:00:00;Issue;Workhorse Sentinel ADCP;all;all;all;Mooring slid to South-East.  12m deep;S�bastien Lavanchy;
