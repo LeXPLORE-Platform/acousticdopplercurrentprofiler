@@ -33,7 +33,7 @@ for file in files_300:
     a = ADCP()
     p = select_parameters(file, parameter_dict) # Get the parameters corresponding to the specific deployment period
     if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"]): # Read the raw data  
-        a.quality_flags("./quality_assurance.json") # Flag the data based on quality checks
+        a.quality_flags(envass_file="./quality_assurance.json",adcp_file='./quality_specific_adcp.json') # Flag the data based on quality checks
         a.export(os.path.join(directories["Level1_dir"], "RDI300"), "L1", output_period="file", overwrite_file=True) # Create Level 1 file
         a.mask_data() # Replace flagged data by nan 
         a.derive_variables(p["rotate_velocity"]) # Compute additional variables to add to Level 2
@@ -43,7 +43,7 @@ for file in files_600:
     a = ADCP()
     p = select_parameters(file, parameter_dict)
     if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], up=p["up"]):
-        a.quality_flags("./quality_assurance.json")
+        a.quality_flags(envass_file="./quality_assurance.json",adcp_file='./quality_specific_adcp.json')
         a.export(os.path.join(directories["Level1_dir"], "RDI600"), "L1", output_period="file", overwrite_file=True)
         a.mask_data()
         a.derive_variables(p["rotate_velocity"])

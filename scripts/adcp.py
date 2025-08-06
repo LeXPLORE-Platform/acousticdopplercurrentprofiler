@@ -197,26 +197,44 @@ class ADCP(GenericInstrument):
             log("Failed to process {}.".format(file))
             return False
 
-    def quality_flags(self, file_path = './quality_assurance.json', simple=True):
+    def quality_flags(self, envass_file = './quality_assurance.json', adcp_file='./quality_specific_adcp.json', simple=True):
 
         log("Performing quality assurance")
         log("1. ADCP-specific quality checks",indent=1) # Additional ADCP tests on the velocity matrix, increases qa with a base-2 approach (check#2 returns 0 or 2, chech#3 returns 0 or 4, etc.)
-        qa_adcp=init_flag_adcp(np.array(self.data["u"])) # Initial qa array (zero values)
-        if self.general_attributes['up']=='True': # Upward looking: surface detection
-            qa_adcp=qa_adcp_interface_top(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],beam_angle=20)
-        else: # Downward looking: sediment detection
-            qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=20)
-            
-        qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],corr_threshold=64)
-        qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"],percentage_threshold=25)
-        qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"],percentage_threshold=25)
-        qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"],vel_threshold=0.07)
-        qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"],tilt_threshold=15)
-        qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],std_threshold=0.02)
-        qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"],diff_threshold=30)
+        quality_adcp_dict = json_converter(json.load(open(adcp_file))) # Load parameters related to simple and advanced quality checks
+        
+        varname0=quality_adcp_dict["variables"][0]
+        qa_adcp=init_flag_adcp(np.array(self.data[varname0])) # Initial qa array (zero values)
+        
+        if "interface" in quality_adcp_dict["tests"].keys():
+            if self.general_attributes['up']=='True': # Upward looking: surface detection
+                qa_adcp=qa_adcp_interface_top(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],beam_angle=quality_adcp_dict["tests"]["interface"]["beam_angle"])
+            else: # Downward looking: sediment detection
+                qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=quality_adcp_dict["tests"]["interface"]["beam_angle"])
+        
+        if "corr" in quality_adcp_dict["tests"].keys():
+            qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],corr_threshold=quality_adcp_dict["tests"]["corr"]["corr_threshold"])
+        
+        if "PG14" in quality_adcp_dict["tests"].keys():
+            qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"],percentage_threshold=quality_adcp_dict["tests"]["PG14"]["percentage_threshold"])
+        
+        if "PG3" in quality_adcp_dict["tests"].keys():
+            qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"],percentage_threshold=quality_adcp_dict["tests"]["PG3"]["percentage_threshold"])
+        
+        if "velerror" in quality_adcp_dict["tests"].keys():
+            qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"],vel_threshold=quality_adcp_dict["tests"]["velerror"]["vel_threshold"])
+        
+        if "tilt" in quality_adcp_dict["tests"].keys():
+            qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"],tilt_threshold=quality_adcp_dict["tests"]["tilt"]["tilt_threshold"])
+        
+        if "corrstd" in quality_adcp_dict["tests"].keys():
+            qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],std_threshold=quality_adcp_dict["tests"]["corrstd"]["std_threshold"])
+        
+        if "echodiff" in quality_adcp_dict["tests"].keys():
+            qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"],diff_threshold=quality_adcp_dict["tests"]["echodiff"]["diff_threshold"])
         
         log("2. envass quality checks",indent=1) # Corresponds to quality check #1: qa is 0 (all good) or 1 (flagged)
-        quality_assurance_dict = json_converter(json.load(open(file_path))) # Load parameters related to simple and advanced quality checks
+        quality_assurance_dict = json_converter(json.load(open(envass_file))) # Load parameters related to simple and advanced quality checks
         
         for key, values in self.variables.copy().items():
             if (key in quality_assurance_dict):
@@ -224,7 +242,7 @@ class ADCP(GenericInstrument):
                 self.variables[name] = {'var_name': name, 'dim': values["dim"],
                                         'unit': '0 = nothing to report, 1 = more investigation',
                                         'long_name': name, }
-                if self.data[key].shape==qa_adcp.shape:
+                if key in quality_adcp_dict["variables"] and self.data[key].shape==qa_adcp.shape:
                     prior_qa=qa_adcp
                 else:
                     prior_qa=np.zeros(self.data[key].shape)
