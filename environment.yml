@@ -1,7 +1,22 @@
 name: "base"
 channels:
   - defaults
-# dependencies:
-# - add packages here
-# - one per line
+  - conda-forge
+dependencies:
+  - python=3.10  # or your preferred version
+  - numpy
+  - pandas
+  - xarray
+  - scipy
+  - netCDF4
+  - matplotlib
+  - cmocean
+  - seawater
+  - ipympl
+  - pyyaml
+  - jupyter
+  - python-dateutil
+  - envass
 prefix: "/opt/conda"
+
+
