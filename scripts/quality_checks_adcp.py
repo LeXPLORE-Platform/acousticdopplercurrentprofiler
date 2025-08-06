@@ -120,7 +120,7 @@ def qa_adcp_velerror(prior_flags,vel_error,vel_threshold=0.05,flag_nb=2**5):
     Parameters:
         prior_flags (np.array of ints): flags array with existing flags 
         vel_error (np.array of floats): velocity error [m/s]
-        percentage_threshold (float): maximum velocity error allowed [m/s]
+        vel_threshold (float): maximum velocity error allowed [m/s]
         flag_nb (int): index of the flag
     Returns:
         flags (np.array of ints): data array where flagged data is shown with a number>0 and 0 = no flag.
@@ -185,9 +185,9 @@ def qa_adcp_echodiff(prior_flags,echo1,echo2,echo3,echo4,diff_threshold=30,flag_
     """
     flags=np.zeros(prior_flags.shape)
     decho1=np.concatenate((np.zeros((1,echo1.shape[1])),np.diff(echo1,axis=0)),axis=0)
-    decho2=np.concatenate((np.zeros((1,echo2.shape[1])),np.diff(echo1,axis=0)),axis=0)
-    decho3=np.concatenate((np.zeros((1,echo3.shape[1])),np.diff(echo1,axis=0)),axis=0)
-    decho4=np.concatenate((np.zeros((1,echo4.shape[1])),np.diff(echo1,axis=0)),axis=0)
+    decho2=np.concatenate((np.zeros((1,echo2.shape[1])),np.diff(echo2,axis=0)),axis=0)
+    decho3=np.concatenate((np.zeros((1,echo3.shape[1])),np.diff(echo3,axis=0)),axis=0)
+    decho4=np.concatenate((np.zeros((1,echo4.shape[1])),np.diff(echo4,axis=0)),axis=0)
     flags[(decho1>diff_threshold)|(decho2>diff_threshold)|(decho3>diff_threshold)|(decho4>diff_threshold)]=flag_nb
     flags=flags+prior_flags 
     return flags
