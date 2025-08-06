@@ -95,6 +95,31 @@ def moving_average_filter(array, m=3, n=7, valid_entries=3):
 
 def absolute_backscatter(echo, temp, beam_freq, beam_angle, cabled, z0, r, xmit_length, battery, Er,
                                 kc = 0.45, PLOT = False, msv = -80, Msv = -55, dsv = 0.5):
+    """
+    Computes absolute backscatter Sv [dB] from echo [counts] for RDI Workhorse Signature.
+
+    Parameters:
+        echo (4*n_bins*n_time np.array of floats): echo data for the 4 beams [counts]
+        temp (n_time np.array of floats): temperature [°C]
+        beam_freq (float): acoustic frequency provided by dolfyn [kHz]
+        beam_angle (float): angle between the transmitted signal and the ADCP z-axis, provided by dolfyn [°]
+        cabled (boolean): = True if cabled ADCP
+        z0 (n_bins np.array of floats): depth values, positive downward [m]
+        r (n_bins np.array of floats): radial distances r=depth/cos(beam_angle) [m]
+        xmit_length (float): transmit pulse length provided by dolfyn [m]
+        battery (n_time np.array of floats): battery level [counts]
+        Er (float): noise echo in absence of any signal [counts]
+        kc (float): conversion factor from counts to decibels [dB/count]
+        PLOT (boolean): = True to make plot, NOT USED HERE
+        msv (int): NOT USED HERE
+        Msv (int): NOT USED HERE
+        dsv (float): NOT USED HERE
+        
+        
+    Returns:
+        mean_Sv (n_bins*n_time np.array of floats): mean backscatter between the four beams [dB]
+        
+    """
     mbat = 32.
     if beam_freq == 300:
         C = -140.87
