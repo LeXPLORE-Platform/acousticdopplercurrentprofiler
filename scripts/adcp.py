@@ -208,9 +208,9 @@ class ADCP(GenericInstrument):
         
         if "interface" in quality_adcp_dict["tests"].keys():
             if self.general_attributes['up']=='True': # Upward looking: surface detection
-                qa_adcp=qa_adcp_interface_top(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],beam_angle=quality_adcp_dict["tests"]["interface"]["beam_angle"])
+                qa_adcp=qa_adcp_interface_top(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],beam_angle=self.general_attributes["beam_angle"])
             else: # Downward looking: sediment detection
-                qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=quality_adcp_dict["tests"]["interface"]["beam_angle"])
+                qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=self.general_attributes["beam_angle"])
         
         if "corr" in quality_adcp_dict["tests"].keys():
             qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],corr_threshold=quality_adcp_dict["tests"]["corr"]["corr_threshold"])
