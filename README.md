@@ -29,14 +29,14 @@ An acoustic Doppler current profiler (ADCP) is a hydroacoustic current meter sim
 The two different ADCPs used to cover the water column near LéXPLORE are cable linked to the platform and record live data. Characteristics and standard setup of each ADCP are given below. Note that the setup can be modified for specific studies. Please get in touch with the science contact if you are interested in a specific configuration.
 
 ### Upward-looking RDI 600 kHz (near-surface velocities and backscattering)
-- **Brand, Model & SN**:    Teledyne RD Instruments, Workhorse Sentinel 600 kHz, SN 20515
+- **Brand, Model & SN**:    Teledyne RD Instruments, Workhorse Sentinel 600 kHz, SN 20515 (before 12.01.2023 and after 19.04.2023), SN 1178 (between 19.01.2023 and 19.04.2023)
 - **System integration**: VmDAS
 - **Accuracy**:             ​±0.3% of measured velocity ± 0.3 cm/s
 - **Setup**:                Bin size: 0.25 m; Averaging ensemble interval: 10 minutes; Number of pings per ensemble varies with the deployment period
 - **Deployment depth**: varies with the deployment period (8-28 m), see `scripts/parameters.json` for more information
 
 ### Downward-looking RDI 300 kHz (deep velocities and backscattering)
-- **Brand, Model & SN**:    Teledyne RD Instruments, Workhorse Sentinel 300 kHz, SN 20360
+- **Brand, Model & SN**:    Teledyne RD Instruments, Workhorse Sentinel 300 kHz, SN 20360 (before 12.01.2023), SN 20847 (after 19.01.2023)
 - **System integration**: VmDAS
 - **Accuracy**:             ±1.0% of measured velocity ± 0.5 cm/s
 - **Setup**:                Bin size: 1 m; Averaging ensemble interval: 10 minutes; Number of pings per ensemble varies with the deployment period
@@ -143,7 +143,6 @@ quality checks and further investigation is needed (see section [quality assuran
     * heading angle (rotation around z-axis, 0° if beam #3 is facing north), *heading* (time) [°]
     * depth-averaged velocity magnitude, *mU* (time) [m s^(-1)]
     * direction of depth-averaged velocity (anticlockwise from east), *mdir* (time) [°]
-* Variables to be added in the future: 
     * absolute backscatter, *Sv* (depth,time) [dB]
 
 An example of visualisation of the Netcdf files is provided as a Jupyter Notebook (`notebooks/vis_adcp.ipynb`)
