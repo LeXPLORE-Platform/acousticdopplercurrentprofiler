@@ -90,7 +90,7 @@ The python script `scripts/main.py` defines the different processing steps while
 class methods to process the data. To add a new processing or visualization step, a new class method can be created in the `adcp.py` file and the step can be added in `main.py` file.
 Both above mentioned python scripts are independent of the local file system.
 
-In addition, `scripts/functions.py` and `scripts/general_functions.py` contain ADCP-specific and more general functions, respectively. ADCP-specific quality checks are defined as functions in `scripts/quality_checks_adcp.py`. The script `scripts/quality_assurance.py` runs advanced quality checks based on `quality_assurance.json`. The functions `scripts/download_data.py` and `scripts/upload_data.py` are used to download and upload data, respectively, between the local repository and the cloud (see `data/README.md` for more information). 
+In addition, `scripts/functions.py` and `scripts/general_functions.py` contain ADCP-specific and more general functions, respectively. ADCP-specific quality checks are defined as functions in `scripts/quality_checks_adcp.py`. The script `scripts/quality_assurance.py` runs advanced quality checks based on `quality_assurance.json`. The notebook `notebooks/define_quality_assurance.ipynb` can help to run advanced quality checks from envass. The functions `scripts/download_data.py` and `scripts/upload_data.py` are used to download and upload data, respectively, between the local repository and the cloud (see `data/README.md` for more information). 
 
 ## Data
 
