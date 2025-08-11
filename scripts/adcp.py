@@ -60,8 +60,8 @@ class ADCP(GenericInstrument):
 
         self.derived_variables = {
             'mU': {'var_name': 'mU', 'dim': ('time',), 'unit': 'm s-1', 'long_name': 'modulus of depth-averaged velocity'},
-            'mdir': {'var_name': 'mdir', 'dim': ('time',), 'unit': 'deg', 'long_name': 'direction (anticlockwise from east) of depth-averaged velocity'}
-            #'Sv': {'var_name': 'Sv', 'dim': ('depth', 'time'), 'unit': 'dB', 'long_name': 'absolute backscatter'}
+            'mdir': {'var_name': 'mdir', 'dim': ('time',), 'unit': 'deg', 'long_name': 'direction (anticlockwise from east) of depth-averaged velocity'},
+            'Sv': {'var_name': 'Sv', 'dim': ('depth', 'time'), 'unit': 'dB', 'long_name': 'beam-averaged absolute backscatter'}
         }
 
         self.data = {}
@@ -145,6 +145,7 @@ class ADCP(GenericInstrument):
             self.general_attributes["beam_angle"] = float(dlfn_data.attrs["beam_angle"]) 
             self.general_attributes["blank_dist"] = float(dlfn_data.attrs["blank_dist"])
             self.general_attributes["beam_freq"] = float(dlfn_data.attrs["freq"])
+            self.general_attributes["bandwidth"] = float(dlfn_data.attrs["bandwidth"])
             
             if up:
                 z0 = transducer_depth - dlfn_subset.range.values
@@ -152,7 +153,8 @@ class ADCP(GenericInstrument):
                 z0 = transducer_depth + dlfn_subset.range.values
             #echo = dlfn_data.signal.echo.astype(float) # dolfyn version <1.0
             echo = dlfn_subset.amp.values.astype(float)
-            self.data["r"] = z0/np.cos(self.general_attributes["beam_angle"]*np.pi/180.)
+            #self.data["r"] = z0/np.cos(self.general_attributes["beam_angle"]*np.pi/180.) # Radial distances from surface
+            self.data["zrange"] =dlfn_subset.range.values # Range values
             self.data["eu"] = dlfn_subset.vel[3, :, :].values # Velocity error
             #self.data["corr"] = dlfn_data.signal.corr.astype(float)/255. # dolfyn version <1.0
             #self.data["prcnt_gd"] = dlfn_data.signal.prcnt_gd.astype(float) # dolfyn version <1.0
@@ -191,7 +193,7 @@ class ADCP(GenericInstrument):
             self.data["battery"]=np.full(self.data["roll"].shape,np.nan)
             # self.data["temp"] = dlfn_data.env.temperature_C # dolfyn version <1.0 # dolfyn version <1.0
             self.data["temp"]=dlfn_subset.temp.values
-
+            
             return True
         except:
             log("Failed to process {}.".format(file))
@@ -272,12 +274,25 @@ class ADCP(GenericInstrument):
         self.data["u"] = moving_average_filter(self.data["u"])
         self.data["v"] = moving_average_filter(self.data["v"])
         self.data["w"] = moving_average_filter(self.data["w"])
-
-        #log("Absolute backscatter", indent=2)
-        # self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],
-        #                                        self.general_attributes["beam_freq"],
-        #                                        self.general_attributes["beam_angle"],
-        #                                        bool(distutils.util.strtobool(self.general_attributes["cabled"])),
-        #                                        self.data["depth"], self.data["r"],
-        #                                        self.general_attributes["xmit_length"], self.data["battery"],
-        #                                        self.general_attributes["Er"])
+        
+        log("Absolute backscatter", indent=2)
+        if "battery" in self.data.keys() and np.sum(~np.isnan(self.data["battery"]))>0: # Battery values available  
+            self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],
+                                                   self.general_attributes["beam_freq"],
+                                                   self.general_attributes["beam_angle"],
+                                                   bool(distutils.util.strtobool(self.general_attributes["cabled"])),
+                                                   self.data["zrange"], self.data["depth"],
+                                                   self.general_attributes["xmit_length"], self.data["battery"],
+                                                   self.general_attributes["Er"],self.general_attributes["bandwidth"])
+        elif bool(distutils.util.strtobool(self.general_attributes["cabled"])): # No battery required
+            self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],
+                                                   self.general_attributes["beam_freq"],
+                                                   self.general_attributes["beam_angle"],
+                                                   True,
+                                                   self.data["zrange"], self.data["depth"],
+                                                   self.general_attributes["xmit_length"], np.nan,
+                                                   self.general_attributes["Er"],self.general_attributes["bandwidth"])
+        else: 
+            print("*WARNING*: battery data is required for backscattering calculations")
+            self.data["Sv"]=np.full(self.data["u"].shape,np.nan)
+        
