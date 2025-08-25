@@ -93,35 +93,91 @@ def moving_average_filter(array, m=3, n=7, valid_entries=3):
     #self.echo = self.echo[:, 1:-1, 3:-3]
     return u_smoothed
 
-def absolute_backscatter(echo, temp, beam_freq, beam_angle, cabled, z0, r, xmit_length, battery, Er,
-                                kc = 0.45, PLOT = False, msv = -80, Msv = -55, dsv = 0.5):
-    mbat = 32.
+def absolute_backscatter(echo, temp, beam_freq, beam_angle, cabled, zrange, z0, xmit_length, battery, Er,bandwidth,
+                                kc = 0.45):
+    """
+    Computes absolute backscatter Sv [dB] from echo [counts] for RDI Workhorse Signature following 
+    "Mullison, J. (2017). Backscatter estimation using broadband acoustic doppler current profilers-updated. 
+    In Proceedings of the ASCE Hydraulic Measurements & Experimental Methods Conference, Durham, NH, USA (pp. 9-12)."
+    Note that the absorption coefficient alpha is estimated from the typical value for river waters, it should be corrected for temperature, salinity and suspended sediment
+    to get more accurate backscattering values.
+
+    Parameters:
+        echo (4*n_bins*n_time np.array of floats): echo data for the 4 beams [counts]
+        temp (n_time np.array of floats): temperature [°C]
+        beam_freq (float): acoustic frequency provided by dolfyn [kHz]
+        beam_angle (float): angle between the transmitted signal and the ADCP z-axis, provided by dolfyn [°]
+        cabled (boolean): = True if cabled ADCP
+        zrange (n_bins np.array of floats): range values (i.e., distance from ADCP) [m]
+        z0 (n_bins np.array of floats): depth values, positive downward [m]
+        xmit_length (float): transmit pulse length provided by dolfyn [m]
+        battery (n_time np.array of floats): battery level, not required for cabled-ADCP [counts]
+        Er (float): noise echo in absence of any signal [counts]
+        bandwidth (float): =0 if broad bandwidth, =1 if narrow bandwidth, based on WB command [-]
+        kc (float): conversion factor from counts to decibels [dB/count]      
+        
+    Returns:
+        mean_Sv (n_bins*n_time np.array of floats): mean backscatter between the four beams [dB]
+        
+    """
+    # Old parameters:
+    # mbat = 32.
+    # msv = -80
+    # Msv = -55
+    # dsv = 0.5
+    
+    
+    # Parameters provided by Mullison (2017):
     if beam_freq == 300:
-        C = -140.87
-        if not cabled:
-            Pdbw = 14.0
+        if bandwidth==0:
+            C = -140.87 # C_25% [dB]
         else:
-            Pdbw = 17.5
-        alpha = 0.025
+            C=-151.64 #C_6% [dB]
+        
+        
+        if not cabled:
+            Pdbw = 14.0 # [dB]
+        else:
+            Pdbw = 17.5 # [dB]
+        alpha = 0.025  # [dB/m]
+        Rayleigh_dist=0.87 # [m]
+        
     elif beam_freq == 600:
-        C = -139.09
-        if not cabled:
-            Pdbw = 9.0
+        if bandwidth==0:
+            C = -139.09 # C_25% [dB]
         else:
-            Pdbw = 12.5
-        alpha = 0.098
-                
-    R = r + 0.25*(z0[1]-z0[0])/np.cos(beam_angle*np.pi/180.)
+            C=-149.14 #C_6% [dB]
+            
+        if not cabled:
+            Pdbw = 9.0 # [dB]
+        else:
+            Pdbw = 12.5 # [dB]
+        alpha = 0.098 # [dB/m]
+        Rayleigh_dist=1.75 # [m]
+    
+    min_range=np.pi/4*Rayleigh_dist # minimum range above which the backscattering equation can be applied [m]
+    ind_min=np.where(zrange>=min_range)[0][0]
+    R = (zrange - 0.25*(zrange[1]-zrange[0]))/np.cos(beam_angle*np.pi/180.) # Along-beam range in the last quarter of each bin (rangle values zrange(i) are the range at the end of bin i)
     Sv = np.full(echo.shape, np.nan)
-    shp = echo.shape
-    for i in range(shp[0]):
-        for j in range(shp[1]):
-            for k in range(shp[2]):
-                Sv[i,j,k] = C +10*np.log10((temp[k]+273.16)*R[j]**2) - 10*np.log10(xmit_length) - Pdbw  + 2.*alpha*R[j]+ 10.*np.log10( 10**(kc*(echo[i,j,k]-Er)/10.)-1 )
-                if not cabled:
-                    Sv[i,j,k] -= 20*np.log10(battery[k]/np.nanmean(battery))
+    Sv[:,ind_min:,:] = C +10*np.log10((temp[None,None,:]+273.16)*R[None,ind_min:,None]**2) - 10*np.log10(xmit_length) - Pdbw  + 2.*alpha*R[None,ind_min:,None]+ 10.*np.log10( 10**(kc*(echo[:,ind_min:,:]-Er)/10.)-1 )
+    
+    if not cabled:
+        Sv-= 20*np.log10(battery[None,None,:]/np.nanmean(battery)) # Correction term, i.e. Sv_corr=Sv-20*log10(bat/mean_bat)
+    
+    # Old calculation (removed by T. Doda, 11.08.2025):
+    #R = r + 0.25*(z0[1]-z0[0])/np.cos(beam_angle*np.pi/180.)
+    # shp = echo.shape
+    # for i in range(shp[0]):
+    #     for j in range(ind_min,shp[1],1):
+    #         for k in range(shp[2]):
+    #             Sv[i,j,k] = C +10*np.log10((temp[k]+273.16)*R[j]**2) - 10*np.log10(xmit_length) - Pdbw  + 2.*alpha*R[j]+ 10.*np.log10( 10**(kc*(echo[i,j,k]-Er)/10.)-1 )
+    #             if not cabled:
+    #                 Sv[i,j,k] -= 20*np.log10(battery[k]/np.nanmean(battery)) # Correction term, i.e. Sv_corr=Sv-20*log10(bat/mean_bat)
+    
     mean_Sv = np.mean(Sv, axis=0)
+    
     return mean_Sv
+
 def finds_surface_1prof(echo, itime, irt = 100, factor = 1.5, PLOT = False):
     #This function just finds the surface for a given time step and given accoustic beam
     #It probably needs to be improved
