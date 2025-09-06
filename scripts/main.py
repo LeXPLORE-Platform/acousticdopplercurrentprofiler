@@ -1,50 +1,64 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import json
 import yaml
-from adcp import ADCP
-from functions import latest_files, all_files, log, select_parameters
+import json
+import time
+import argparse
+import requests
+from instruments import ADCP
+from general.functions import logger, files_in_directory
+from functions import retrieve_new_files, select_parameters
 
+def main(server=False, logs=False):
+    repo = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if logs:
+        log = logger(os.path.join(repo, "logs/adcp"))
+    else:
+        log = logger()
+    log.initialise("Processing LéXPLORE ADCP data")
+    directories = {f: os.path.join(repo, "data", f) for f in ["Level0", "Level1", "Level2"]}
+    for directory in directories:
+        os.makedirs(directories[directory], exist_ok=True)
+    edited_files = []
 
-with open("scripts/input_python.yaml", "r") as f:
-    directories = yaml.load(f, Loader=yaml.FullLoader) # Path to the data directories L0, L1, L2
-    
-for directory in directories.values():
-    if not os.path.exists(directory):
-        os.makedirs(directory) # Create the directories if they do not exist
+    log.begin_stage("Collecting mooring parameters")
+    with open(os.path.join(repo, 'notes/parameters.json'), 'r') as f:
+        parameter_dict = json.load(f)
+    log.end_stage()
 
-with open('scripts/parameters.json', 'r') as f:
-    parameter_dict = json.load(f) # Parameters related to the settings of the ADCP for each deployment period 
+    log.begin_stage("Collecting inputs")
+    if server:
+        log.info("Processing files from sftp server")
+        if not os.path.exists(os.path.join(repo, "creds.json")):
+            raise ValueError("Credential file required to retrieve live data from the fstp server.")
+        with open(os.path.join(repo, "creds.json"), 'r') as f:
+            creds = json.load(f)
+        files = retrieve_new_files(directories["Level0"], creds, server_location=["data/ADCP_300", "data/ADCP_600"], filetype=".LTA")
+        edited_files = edited_files + files
+    else:
+        files = files_in_directory(directories["Level0"])
+        files.sort()
+        log.info("Reprocessing complete dataset from {}".format(directories["Level0"]))
+    log.end_stage()
 
-if len(sys.argv) == 1: # Reprocess all the L0 files
-    files_300 = all_files(directories["Level0_dir"], "RDI300")
-    files_600 = all_files(directories["Level0_dir"], "RDI600")
-    log("Reprocessing complete dataset.")
+    log.begin_stage("Processing data to L1")
+    for file in files:
+        sensor = ADCP(log=log)
+        p = select_parameters(file, parameter_dict)
+        if sensor.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], cabled=p["cabled"], up=p["up"]):
+            sensor.quality_flags(envass_file=os.path.join(repo, "notes/quality_assurance.json"), adcp_file=os.path.join(repo, 'notes/quality_specific_adcp.json'))
+            edited_files.extend(sensor.export(os.path.join(directories["Level1_dir"], "RDI" + p["bandwidth"]), "L1_ADCP_", output_period="weekly", overwrite=True))
+            sensor.mask_data()
+            sensor.derive_variables(p["rotate_velocity"])
+            edited_files.extend(sensor.export(os.path.join(directories["Level2_dir"], "RDI" + p["bandwidth"]), "L2_ADCP_", output_period="weekly", overwrite=True))
+    log.end_stage()
 
-elif len(sys.argv) == 2 and str(sys.argv[1]) == "live": # Live data: process recent L0 files only
-    files_300 = latest_files(directories["Level0_dir"], "RDI300")
-    files_600 = latest_files(directories["Level0_dir"], "RDI600")
-    log("Live processing recent data.")
-else:
-    raise ValueError()
+    return edited_files
 
-for file in files_300:
-    a = ADCP()
-    p = select_parameters(file, parameter_dict) # Get the parameters corresponding to the specific deployment period
-    if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], cabled=p["cabled"], up=p["up"]): # Read the raw data  
-        a.quality_flags(envass_file="./quality_assurance.json",adcp_file='./quality_specific_adcp.json') # Flag the data based on quality checks
-        a.export(os.path.join(directories["Level1_dir"], "RDI300"), "L1", output_period="file", overwrite_file=True) # Create Level 1 file
-        a.mask_data() # Replace flagged data by nan 
-        a.derive_variables(p["rotate_velocity"]) # Compute additional variables to add to Level 2
-        a.export(os.path.join(directories["Level2_dir"], "RDI300"), "L2", output_period="file", overwrite_file=True) # Create Level 2 file
-
-for file in files_600:
-    a = ADCP()
-    p = select_parameters(file, parameter_dict)
-    if a.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], cabled=p["cabled"], up=p["up"]):
-        a.quality_flags(envass_file="./quality_assurance.json",adcp_file='./quality_specific_adcp.json')
-        a.export(os.path.join(directories["Level1_dir"], "RDI600"), "L1", output_period="file", overwrite_file=True)
-        a.mask_data()
-        a.derive_variables(p["rotate_velocity"])
-        a.export(os.path.join(directories["Level2_dir"], "RDI600"), "L2", output_period="file", overwrite_file=True)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--server', '-s', help="Collect and process new files from FTP server", action='store_true')
+    parser.add_argument('--logs', '-l', help="Write logs to file", action='store_true')
+    args = vars(parser.parse_args())
+    main(server=args["server"], logs=args["logs"])

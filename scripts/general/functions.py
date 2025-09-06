@@ -4,6 +4,7 @@ import copy
 import json
 import ftplib
 import netCDF4
+import requests
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -86,7 +87,7 @@ class GenericInstrument:
 #        except:
 #            self.log.error("Unable to apply QA file, this is likely due to bad formatting of the file.")
 
-    def export(self, folder, title, output_period="file", time_label="time", grid=False, overwrite=False, overwrite_file=False):
+    def export(self, folder, title, output_period="file", time_label="time", grid=False, overwrite=False):
         if grid:
             variables = self.grid_variables
             dimensions = self.grid_dimensions
@@ -129,7 +130,7 @@ class GenericInstrument:
             output_files.append(out_file)
             self.log.info("Writing {} data from {} until {} to NetCDF file {}".format(title, file_start, file_end, filename), indent=2)
 
-            if not os.path.isfile(out_file) or overwrite_file:
+            if not os.path.isfile(out_file):
                 self.log.info("Creating new file.", indent=3)
                 with netCDF4.Dataset(out_file, mode='w', format='NETCDF4') as nc:
                     for key in self.general_attributes:
@@ -200,8 +201,6 @@ class GenericInstrument:
                             order = np.argsort(combined_time)
                             nc_copy = copy_variables(nc.variables)
                             for key, values in self.variables.items():
-                                print(key)
-                                print(len(nc_copy[key][:]), len(data[key]), len(valid))
                                 combined = np.append(nc_copy[key][:], np.array(data[key])[valid])
                                 if overwrite:
                                     print(len(combined), len(time))
@@ -418,6 +417,35 @@ def advanced_quality_flags(ds, json_path, log, time_label="time"):
     return ds
 
 
+def event_quality_flags(ds, datalakes, events, log, time_label="time"):
+    log.info("Applying manual timeseries checks.", indent=2)
+    df = pd.read_csv(events, sep=";")
+    df["start"] = df["start"].apply(lambda l: datetime.timestamp(datetime.strptime(l, '%Y%m%d %H:%M:%S').replace(tzinfo=timezone.utc)))
+    df["stop"] = df["stop"].apply(lambda l: datetime.timestamp(datetime.strptime(l, '%Y%m%d %H:%M:%S').replace(tzinfo=timezone.utc)))
+    for id in datalakes:
+        x = requests.get("https://api.datalakes-eawag.ch/maintenance/"+str(id))
+        if x.status_code == 200:
+            for e in x.json():
+                df.loc[len(df)] = [datetime.timestamp(datetime.strptime(e["starttime"], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)),
+                                   datetime.timestamp(datetime.strptime(e["endtime"], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)),
+                                   e["parseparameter"],
+                                   e["description"]]
+
+    time = ds.variables["time"][:]
+    for index, row in df.iterrows():
+        idx = np.where(np.logical_and(time >= int(row["start"]), time <= int(row["stop"])))
+        if row["parameter"] == "All":
+            for var in ds.variables.keys():
+                if "_qual" in var and time_label not in var:
+                    ds.variables[var][:][idx] = 1
+        else:
+            if row["parameter"] + "_qual" in ds.variables.keys():
+                ds.variables[row["parameter"] + "_qual"][:][idx] = 1
+            else:
+                log.warning("Unable to find local parameter {} to apply event.".format(row["parameter"] + "_qual"))
+    return ds
+
+
 def json_converter(qa):
     for keys in qa.keys():
         try:
@@ -433,6 +461,14 @@ def json_converter(qa):
         return qa
     except:
         return qa
+
+
+def files_in_directory(root):
+    f = []
+    for path, subdirs, files in os.walk(root):
+        for name in files:
+            f.append(os.path.join(path, name))
+    return f
 
 
 def geographic_distance(latlng1, latlng2):

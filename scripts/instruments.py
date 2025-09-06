@@ -9,7 +9,7 @@ from functions import *
 from datetime import datetime
 from envass import qualityassurance
 from dateutil.relativedelta import relativedelta
-from general_functions import GenericInstrument
+from general.functions import GenericInstrument
 from quality_checks_adcp import *
 
 
@@ -19,7 +19,7 @@ class ADCP(GenericInstrument):
         self.general_attributes = {
             "institution": "EPFL",
             "source": "ADCP",
-            "references": "LéXPLORE commun instruments camille.minaudo@epfl.ch>",
+            "references": "LéXPLORE commun instruments",
             "history": "See history on Renku",
             "conventions": "CF 1.7",
             "comment": "Data from ADCP on Lexplore Platform in Lake Geneva",
@@ -89,7 +89,6 @@ class ADCP(GenericInstrument):
 
         try:
             dlfn_data = dlfn.read(file)
-            #date = np.array([mplt_datetime(t) for t in dlfn_data.mpltime], dtype='datetime64[s]') # dolfyn version <1.0
             date= dlfn_data.time.data.astype('datetime64[s]')
             time = date.astype('int')
 
@@ -99,8 +98,6 @@ class ADCP(GenericInstrument):
                 cabled = bool(distutils.util.strtobool(cabled))
 
             # Define the measurement period either from correlation>20% or from specified start and end dates:
-                
-            #idx = np.where(np.nanmean(np.nanmean(dlfn_data.signal.corr/255.*100, axis=0), axis=0) > 20)[0] # dolfyn version <1.0
             idx = np.where(np.nanmean(np.nanmean(dlfn_data.corr/255.*100, axis=0), axis=0) > 20)[0]
             start = date[idx[[0, -1]]]
 
@@ -118,11 +115,7 @@ class ADCP(GenericInstrument):
 
             time_subset = np.array(date_subset).astype('int')
             idx_subset = (time_subset[0] < time) & (time < time_subset[1])
-            #dlfn_data = dlfn_data.subset[idx_subset] # dolfyn version <1.0
-            # dlfn_data.date = date[idx_subset]
-            # dlfn_data.timestamp = time[idx_subset]
-            # dlfn_data.transducer_depth = transducer_depth
-            
+
             # Create a new dataset with the subset data:
             dlfn_subset=xr.Dataset(coords={key: value.values for key, value in dlfn_data.coords.items() if key != "time"})
             dlfn_subset=dlfn_subset.expand_dims({"time":dlfn_data.time.values[idx_subset]})
@@ -132,16 +125,12 @@ class ADCP(GenericInstrument):
                 if "time" in dimvar:
                     print(var)
                     dlfn_subset=dlfn_subset.assign({var:(dimvar,dlfn_data[var].isel(time=idx_subset).values)})
-            #self.general_attributes["Er"] = np.nanmin(dlfn_data.signal.echo.astype(float)) # dolfyn version <1.0
             self.general_attributes["Er"] = np.nanmin(dlfn_subset.amp.values.astype(float))
             self.general_attributes["cabled"] = str(cabled)
             self.general_attributes["up"] = str(up)
             self.general_attributes["bottom_depth"] = bottom_depth
             self.general_attributes["transducer_depth"] = transducer_depth
-            # self.general_attributes["beam_angle"] = float(dlfn_data.config.beam_angle) # dolfyn version <1.0
-            # self.general_attributes["xmit_length"] = float(dlfn_data.config.xmit_pulse) # transmit pulse length used for backscattering calculation, dolfyn version <1.0
-            # self.general_attributes["beam_freq"] = float(dlfn_data.config.beam_freq_khz) # dolfyn version <1.0
-            self.general_attributes["xmit_length"] = float(dlfn_data.attrs["transmit_pulse_m"]) # transmit pulse length [m] used for backscattering calculation 
+            self.general_attributes["xmit_length"] = float(dlfn_data.attrs["transmit_pulse_m"]) # transmit pulse length [m] used for backscattering calculation
             self.general_attributes["beam_angle"] = float(dlfn_data.attrs["beam_angle"]) 
             self.general_attributes["blank_dist"] = float(dlfn_data.attrs["blank_dist"])
             self.general_attributes["beam_freq"] = float(dlfn_data.attrs["freq"])
@@ -151,17 +140,9 @@ class ADCP(GenericInstrument):
                 z0 = transducer_depth - dlfn_subset.range.values
             else:
                 z0 = transducer_depth + dlfn_subset.range.values
-            #echo = dlfn_data.signal.echo.astype(float) # dolfyn version <1.0
             echo = dlfn_subset.amp.values.astype(float)
-            #self.data["r"] = z0/np.cos(self.general_attributes["beam_angle"]*np.pi/180.) # Radial distances from surface
             self.data["zrange"] =dlfn_subset.range.values # Range values
             self.data["eu"] = dlfn_subset.vel[3, :, :].values # Velocity error
-            #self.data["corr"] = dlfn_data.signal.corr.astype(float)/255. # dolfyn version <1.0
-            #self.data["prcnt_gd"] = dlfn_data.signal.prcnt_gd.astype(float) # dolfyn version <1.0
-            # self.data["heading"] = dlfn_data.orient.raw.heading # dolfyn version <1.0
-            # self.data["roll"] = dlfn_data.orient.raw.roll # dolfyn version <1.0
-            # self.data["pitch"] = dlfn_data.orient.raw.pitch # dolfyn version <1.0
-            # self.data["time"] = np.array(dlfn_data.timestamp, dtype='float') # dolfyn version <1.0
             self.data["corr"] = dlfn_subset.corr.values.astype(float)/255.
             self.data["corr1"] = self.data["corr"][0, :, :]
             self.data["corr2"] = self.data["corr"][1, :, :]
@@ -177,9 +158,6 @@ class ADCP(GenericInstrument):
             self.data["pitch"] = dlfn_subset.pitch.values
             self.data["time"] = dlfn_subset.timestamp.values.astype(float)
             self.data["depth"] = z0
-            # self.data["u"] = dlfn_data.u # dolfyn version <1.0
-            # self.data["v"] = dlfn_data.v # dolfyn version <1.0
-            # self.data["w"] = dlfn_data.w # dolfyn version <1.0
             self.data["u"] = dlfn_subset.vel[0, :, :].values # Eastward velocity
             self.data["v"] = dlfn_subset.vel[1, :, :].values # Northward velocity
             self.data["w"] = dlfn_subset.vel[2, :, :].values # Upward velocity
@@ -188,12 +166,9 @@ class ADCP(GenericInstrument):
             self.data["echo2"] = echo[1, :, :]
             self.data["echo3"] = echo[2, :, :]
             self.data["echo4"] = echo[3, :, :]
-            # self.data["battery"] = dlfn_data.sys.adc[1, :] # dolfyn version <1.0 # dolfyn version <1.0
             # Battery not available in the new dolfyn version
             self.data["battery"]=np.full(self.data["roll"].shape,np.nan)
-            # self.data["temp"] = dlfn_data.env.temperature_C # dolfyn version <1.0 # dolfyn version <1.0
             self.data["temp"]=dlfn_subset.temp.values
-            
             return True
         except:
             log("Failed to process {}.".format(file))

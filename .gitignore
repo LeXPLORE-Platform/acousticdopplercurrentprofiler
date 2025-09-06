@@ -1,5 +1,4 @@
-.idea
-log.txt
+
 # Created by https://www.gitignore.io/api/macos,python,R,linux,vim,emacs,visualstudiocode,intellij
 # Edit at https://www.gitignore.io/?templates=macos,python,R,linux,vim,emacs,visualstudiocode,intellij
 
@@ -64,7 +63,7 @@ flycheck_*.el
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
-.idea
+
 # Generated files
 .idea/**/contentModel.xml
 
@@ -338,6 +337,10 @@ tags
 .renku/tmp
 .renku/cache
 
+.idea
+creds.json
+log.txt
+
 # Data
 
 data/*
@@ -345,3 +348,4 @@ data/*
 !data/README.md
 !data/.bucket
 
+creds.json
