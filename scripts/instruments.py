@@ -85,7 +85,7 @@ class ADCP(GenericInstrument):
             True if the data was correctly read, False otherwise
         """
         
-        log("Parsing data from {}.".format(file))
+        self.log.info("Parsing data from {}.".format(file))
 
         try:
             dlfn_data = dlfn.read(file)
@@ -123,7 +123,6 @@ class ADCP(GenericInstrument):
             for var in dlfn_data.variables:
                 dimvar=list(dlfn_data[var].dims)
                 if "time" in dimvar:
-                    print(var)
                     dlfn_subset=dlfn_subset.assign({var:(dimvar,dlfn_data[var].isel(time=idx_subset).values)})
             self.general_attributes["Er"] = np.nanmin(dlfn_subset.amp.values.astype(float))
             self.general_attributes["cabled"] = str(cabled)
@@ -171,13 +170,14 @@ class ADCP(GenericInstrument):
             self.data["temp"]=dlfn_subset.temp.values
             return True
         except:
-            log("Failed to process {}.".format(file))
+            raise
+            self.log.info("Failed to process {}.".format(file))
             return False
 
     def quality_flags(self, envass_file = './quality_assurance.json', adcp_file='./quality_specific_adcp.json', simple=True):
 
-        log("Performing quality assurance")
-        log("1. ADCP-specific quality checks",indent=1) # Additional ADCP tests on the velocity matrix, increases qa with a base-2 approach (check#2 returns 0 or 2, chech#3 returns 0 or 4, etc.)
+        self.log.info("Performing quality assurance", indent=1)
+        self.log.info("ADCP-specific quality checks",indent=2) # Additional ADCP tests on the velocity matrix, increases qa with a base-2 approach (check#2 returns 0 or 2, chech#3 returns 0 or 4, etc.)
         quality_adcp_dict = json_converter(json.load(open(adcp_file))) # Load parameters related to simple and advanced quality checks
         
         varname0=quality_adcp_dict["variables"][0]
@@ -210,7 +210,7 @@ class ADCP(GenericInstrument):
         if "echodiff" in quality_adcp_dict["tests"].keys():
             qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"],diff_threshold=quality_adcp_dict["tests"]["echodiff"]["diff_threshold"])
         
-        log("2. envass quality checks",indent=1) # Corresponds to quality check #1: qa is 0 (all good) or 1 (flagged)
+        self.log.info("envass quality checks", indent=2) # Corresponds to quality check #1: qa is 0 (all good) or 1 (flagged)
         quality_assurance_dict = json_converter(json.load(open(envass_file))) # Load parameters related to simple and advanced quality checks
         
         for key, values in self.variables.copy().items():
@@ -232,25 +232,25 @@ class ADCP(GenericInstrument):
 
 
     def derive_variables(self, rotate_velocity):
-        log("Computing derived variables.", indent=1)
+        self.log.info("Computing derived variables.", indent=1)
         self.variables.update(self.derived_variables)
 
-        log("Computes mean velocities", indent=2)
+        self.log.info("Computes mean velocities", indent=2)
         self.data["mu"] = np.nanmean(self.data["u"], axis=0)
         self.data["mv"] = np.nanmean(self.data["v"], axis=0)
         self.data["mU"] = (self.data["mu"] ** 2 + self.data["mv"] ** 2) ** 0.5
         self.data["mdir"] = np.arctan2(self.data["mv"], self.data["mu"]) * 180 / np.pi
         self.data["mdir"][self.data["mdir"] < 0] = 360 + self.data["mdir"][self.data["mdir"] < 0]
 
-        log("Compute rotate velocity", indent=2)
+        self.log.info("Compute rotate velocity", indent=2)
         self.data["u"], self.data["v"] = perform_rotate_velocity(self.data["u"], self.data["v"], rotate_velocity)
 
-        log("Smooth data with moving average filter", indent=2)
+        self.log.info("Smooth data with moving average filter", indent=2)
         self.data["u"] = moving_average_filter(self.data["u"])
         self.data["v"] = moving_average_filter(self.data["v"])
         self.data["w"] = moving_average_filter(self.data["w"])
         
-        log("Absolute backscatter", indent=2)
+        self.log.info("Absolute backscatter", indent=2)
         if "battery" in self.data.keys() and np.sum(~np.isnan(self.data["battery"]))>0: # Battery values available  
             self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],
                                                    self.general_attributes["beam_freq"],

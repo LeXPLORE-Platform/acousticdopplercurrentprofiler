@@ -42,16 +42,18 @@ def main(server=False, logs=False):
         log.info("Reprocessing complete dataset from {}".format(directories["Level0"]))
     log.end_stage()
 
-    log.begin_stage("Processing data to L1")
+    files = [files[10]]
+
+    log.begin_stage("Processing data")
     for file in files:
         sensor = ADCP(log=log)
         p = select_parameters(file, parameter_dict)
         if sensor.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], cabled=p["cabled"], up=p["up"]):
             sensor.quality_flags(envass_file=os.path.join(repo, "notes/quality_assurance.json"), adcp_file=os.path.join(repo, 'notes/quality_specific_adcp.json'))
-            edited_files.extend(sensor.export(os.path.join(directories["Level1_dir"], "RDI" + p["bandwidth"]), "L1_ADCP_", output_period="weekly", overwrite=True))
+            edited_files.extend(sensor.export(os.path.join(directories["Level1"], "RDI" + p["bandwidth"]), "L1_ADCP_", output_period="weekly", overwrite=True))
             sensor.mask_data()
             sensor.derive_variables(p["rotate_velocity"])
-            edited_files.extend(sensor.export(os.path.join(directories["Level2_dir"], "RDI" + p["bandwidth"]), "L2_ADCP_", output_period="weekly", overwrite=True))
+            edited_files.extend(sensor.export(os.path.join(directories["Level2"], "RDI" + p["bandwidth"]), "L2_ADCP_", output_period="weekly", overwrite=True))
     log.end_stage()
 
     return edited_files
