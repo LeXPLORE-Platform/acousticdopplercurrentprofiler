@@ -39,7 +39,7 @@ class ADCP(GenericInstrument):
             'v': {'var_name': 'v', 'dim': ('depth', 'time'), 'unit': 'm s-1', 'long_name': 'northern velocty'},
             'w': {'var_name': 'w', 'dim': ('depth', 'time'), 'unit': 'm s-1', 'long_name': 'upward velocty'},
             'temp': {'var_name': 'temp', 'dim': ('time',), 'unit': 'degC', 'long_name': 'temperature', },
-            'eu': {'var_name': 'vel_err', 'dim': ('depth', 'time'), 'unit': 'm s-1', 'long_name': 'velocity error', },
+            'eu': {'var_name': 'eu', 'dim': ('depth', 'time'), 'unit': 'm s-1', 'long_name': 'velocity error', },
             'echo1': {'var_name': 'echo1', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 1 echo'},
             'echo2': {'var_name': 'echo2', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 2 echo'},
             'echo3': {'var_name': 'echo3', 'dim': ('depth', 'time'), 'unit': '-', 'long_name': 'Beam 3 echo'},
@@ -124,6 +124,9 @@ class ADCP(GenericInstrument):
                 dimvar=list(dlfn_data[var].dims)
                 if "time" in dimvar:
                     dlfn_subset=dlfn_subset.assign({var:(dimvar,dlfn_data[var].isel(time=idx_subset).values)})
+            if dlfn_subset.time.size == 0:
+                self.log.warning("No data found in file", indent=1)
+                return False
             self.general_attributes["Er"] = np.nanmin(dlfn_subset.amp.values.astype(float))
             self.general_attributes["cabled"] = str(cabled)
             self.general_attributes["up"] = str(up)
@@ -170,7 +173,6 @@ class ADCP(GenericInstrument):
             self.data["temp"]=dlfn_subset.temp.values
             return True
         except:
-            raise
             self.log.info("Failed to process {}.".format(file))
             return False
 

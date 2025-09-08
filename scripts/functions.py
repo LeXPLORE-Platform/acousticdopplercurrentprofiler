@@ -1,27 +1,26 @@
 import os
 import copy
 import json
+import ftplib
 import numpy as np
 from datetime import datetime
 from envass import qualityassurance
 from general.functions import logger
 
 
-def retrieve_new_files(folder, creds, server_location="data", filetype=".csv", remove=False, overwrite=False, log=logger()):
+def retrieve_new_files(folder, creds, server_location=["data"], filetype=".csv", log=logger()):
     files = []
     log.info("Connecting to {}.".format(creds["ftp"]), indent=1)
     ftp = ftplib.FTP(creds["ftp"], timeout=100)
     ftp.login(creds["user"], creds["password"])
-    server_files = ftp.nlst(server_location)
-    local_files = os.listdir(folder)
-    for file in server_files:
-        file_name = os.path.basename(file)
-        if file.endswith(filetype) and (overwrite or file_name not in local_files):
-            log.info("Downloading file {}".format(file), indent=2)
-            download_file(file, os.path.join(folder, file_name), ftp)
-            if remove:
-                ftp.delete(file)
-            files.append(os.path.join(folder, file_name))
+    for location in server_location:
+        server_files = ftp.nlst(location)
+        for file in server_files:
+            file_name = os.path.basename(file)
+            if file.endswith(filetype):
+                log.info("Downloading file {}".format(file), indent=2)
+                #download_file(file, os.path.join(folder, file_name), ftp)
+                files.append(os.path.join(folder, file_name))
     files.sort()
     return files
 

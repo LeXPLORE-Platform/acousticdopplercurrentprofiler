@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import pytz
 import copy
 import json
 import ftplib
@@ -87,8 +88,8 @@ class GenericInstrument:
 #        except:
 #            self.log.error("Unable to apply QA file, this is likely due to bad formatting of the file.")
 
-    def export(self, folder, title, output_period="file", time_label="time", grid=False, overwrite=False):
-        if grid:
+    def export(self, folder, title, output_period="file", time_label="time", profile_to_grid=False, overwrite=False):
+        if profile_to_grid:
             variables = self.grid_variables
             dimensions = self.grid_dimensions
             data = self.grid
@@ -98,16 +99,18 @@ class GenericInstrument:
             data = self.data
 
         time = data[time_label]
-        time_min = datetime.utcfromtimestamp(np.nanmin(time))
-        time_max = datetime.utcfromtimestamp(np.nanmax(time))
+        time_min = datetime.utcfromtimestamp(np.nanmin(time)).replace(tzinfo=pytz.utc)
+        time_max = datetime.utcfromtimestamp(np.nanmax(time)).replace(tzinfo=pytz.utc)
+
         if output_period == "file":
             file_start = time_min
             file_period = time_max - time_min
         elif output_period == "daily":
-            file_start = (time_min - timedelta(days=time_min.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+            file_start = time_min.replace(hour=0, minute=0, second=0, microsecond=0)
             file_period = timedelta(days=1)
         elif output_period == "weekly":
-            file_start = (time_min - timedelta(days=time_min.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+            file_start = (time_min - timedelta(days=time_min.weekday())).replace(hour=0, minute=0, second=0,
+                                                                                 microsecond=0)
             file_period = timedelta(weeks=1)
         elif output_period == "monthly":
             file_start = time_min.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -128,7 +131,11 @@ class GenericInstrument:
             filename = "{}_{}.nc".format(title, file_start.strftime('%Y%m%d_%H%M%S'))
             out_file = os.path.join(folder, filename)
             output_files.append(out_file)
-            self.log.info("Writing {} data from {} until {} to NetCDF file {}".format(title, file_start, file_end, filename), indent=2)
+            self.log.info(
+                "Writing {} data from {} until {} to NetCDF file {}".format(title, file_start, file_end, filename),
+                indent=2)
+
+            valid_time = (time >= datetime.timestamp(file_start)) & (time <= datetime.timestamp(file_end))
 
             if not os.path.isfile(out_file):
                 self.log.info("Creating new file.", indent=3)
@@ -141,17 +148,33 @@ class GenericInstrument:
                         var = nc.createVariable(values["var_name"], np.float64, values["dim"], fill_value=np.nan)
                         var.units = values["unit"]
                         var.long_name = values["long_name"]
-                        if grid and key == time_label:
+                        if profile_to_grid and key == time_label:
                             var[0] = time[0]
-                        elif grid and len(values["dim"]) == 2:
-                            var[:, 0] = data[key]
+                        elif profile_to_grid and len(values["dim"]) == 2:
+                            if values["dim"][0] == time_label:
+                                var[0, :] = data[key]
+                            elif values["dim"][1] == time_label:
+                                var[:, 0] = data[key]
+                            else:
+                                raise ValueError("Failed to write variable {} with dimensions: {} to file".format(key, ", ".join(values["dim"])))
                         else:
-                            var[:] = data[key]
+                            if len(values["dim"]) == 1:
+                                if values["dim"][0] == time_label:
+                                    var[:] = data[key][valid_time]
+                                else:
+                                    var[:] = data[key]
+                            elif len(values["dim"]) == 2:
+                                if values["dim"][0] == time_label:
+                                    var[:] = data[key][valid_time, :]
+                                elif values["dim"][1] == time_label:
+                                    var[:] = data[key][:, valid_time]
+                            else:
+                                raise ValueError("Failed to write variable {} with dimensions: {} to file".format(key,", ".join(values["dim"])))
             else:
                 self.log.info("Editing existing file.", indent=3)
                 with netCDF4.Dataset(out_file, mode='a', format='NETCDF4') as nc:
                     nc_time = np.array(nc.variables[time_label][:])
-                    if grid:
+                    if profile_to_grid:
                         if time[0] in nc_time:
                             if overwrite:
                                 self.log.info("Overwriting data at {}.".format(time[0]), indent=3)
@@ -163,10 +186,11 @@ class GenericInstrument:
                                                 nc.variables[key][idx] = data[key][0]
                                             else:
                                                 nc.variables[key][idx] = data[key]
-                                        elif len(values["dim"]) == 2:
+                                        elif len(values["dim"]) == 2 and values["dim"][1] == time_label:
                                             nc.variables[key][:, idx] = data[key]
                                         else:
-                                            self.log.warning("Unable to write {} with {} dimensions.".format(key, len(values["dim"])))
+                                            self.log.warning("Unable to write {} with {} dimensions.".format(key, len(
+                                                values["dim"])))
 
                             else:
                                 self.log.info("Grid data already exists in NetCDF, skipping.", indent=3)
@@ -181,7 +205,7 @@ class GenericInstrument:
                                             var[idx] = data[key][0]
                                         else:
                                             var[idx] = data[key]
-                                    elif len(values["dim"]) == 2:
+                                    elif len(values["dim"]) == 2 and values["dim"][1] == time_label:
                                         end = len(var[:][0]) - 1
                                         if idx != end:
                                             var[:, end] = data[key]
@@ -189,24 +213,37 @@ class GenericInstrument:
                                         else:
                                             var[:, idx] = data[key]
                                     else:
-                                        self.log.warning("Unable to write {} with {} dimensions.".format(key, len(values["dim"])))
+                                        self.log.warning(
+                                            "Unable to write {} with {} dimensions.".format(key, len(values["dim"])))
                     else:
                         if np.all(np.isin(time, nc_time)) and not overwrite:
                             self.log.info("Data already exists in NetCDF, skipping.", indent=3)
                         else:
-                            valid_time = (time >= datetime.timestamp(file_start)) & (time < datetime.timestamp(file_end))
                             non_duplicates = ~np.isin(time, nc_time)
                             valid = np.logical_and(valid_time, non_duplicates)
                             combined_time = np.append(nc_time, time[valid])
                             order = np.argsort(combined_time)
                             nc_copy = copy_variables(nc.variables)
                             for key, values in self.variables.items():
-                                combined = np.append(nc_copy[key][:], np.array(data[key])[valid])
-                                if overwrite:
-                                    print(len(combined), len(time))
-                                    combined[np.isin(combined_time, time)] = np.array(data[key])[np.isin(time, combined_time)]
-                                out = combined[order]
-                                nc.variables[key][:] = out
+                                if time_label in values["dim"]:
+                                    if len(values["dim"]) == 1:
+                                        combined = np.append(nc_copy[key][:], np.array(data[key])[valid])
+                                        if overwrite:
+                                            combined[np.isin(combined_time, time)] = np.array(data[key])[
+                                                np.isin(time, combined_time)]
+                                        out = combined[order]
+                                    elif len(values["dim"]) == 2 and values["dim"][1] == time_label:
+                                        combined = np.concatenate(
+                                            (np.array(nc_copy[key][:]), np.array(data[key])[:, valid]), axis=1)
+                                        if overwrite:
+                                            combined[:, np.isin(combined_time, time)] = np.array(data[key])[
+                                                :, np.isin(time, combined_time)]
+                                        out = combined[:, order]
+                                    else:
+                                        raise ValueError(
+                                            "Failed to write variable {} with dimensions: {} to file"
+                                            .format(key, ", ".join(values["dim"])))
+                                    nc.variables[key][:] = out
             file_start = file_start + file_period
         return output_files
 
