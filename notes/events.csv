@@ -1,2 +1,2 @@
-Start date;Start time;Stop date;Stop time;parameter;Comments
-20210625;07:29;20220625;17:33:00;all;Maintenance
+start;stop;parameter;depth;comments
+20210625 07:29:00;20220625 17:33:00;All;All;Maintenance
