@@ -61,7 +61,8 @@ class ADCP(GenericInstrument):
         self.derived_variables = {
             'mU': {'var_name': 'mU', 'dim': ('time',), 'unit': 'm s-1', 'long_name': 'modulus of depth-averaged velocity'},
             'mdir': {'var_name': 'mdir', 'dim': ('time',), 'unit': 'deg', 'long_name': 'direction (anticlockwise from east) of depth-averaged velocity'},
-            'Sv': {'var_name': 'Sv', 'dim': ('depth', 'time'), 'unit': 'dB', 'long_name': 'beam-averaged absolute backscatter'}
+            'Sv': {'var_name': 'Sv', 'dim': ('depth', 'time'), 'unit': 'dB', 'long_name': 'beam-averaged absolute backscatter'},
+            'vel_mag': {'var_name': 'vel_mag', 'dim': ('depth', 'time'), 'unit': 'm/s', 'long_name': 'velocity magnitude'},
         }
 
         self.data = {}
@@ -142,27 +143,28 @@ class ADCP(GenericInstrument):
                 z0 = transducer_depth - dlfn_subset.range.values
             else:
                 z0 = transducer_depth + dlfn_subset.range.values
-            echo = dlfn_subset.amp.values.astype(float)
-            self.data["zrange"] =dlfn_subset.range.values # Range values
-            self.data["eu"] = dlfn_subset.vel[3, :, :].values # Velocity error
+            depth_mask = z0 > 0
+            self.data["depth"] = z0[depth_mask]
+            self.data["zrange"] =dlfn_subset.range.values[depth_mask] # Range values
+            self.data["eu"] = dlfn_subset.vel[3, depth_mask, :].values # Velocity error
             self.data["corr"] = dlfn_subset.corr.values.astype(float)/255.
-            self.data["corr1"] = self.data["corr"][0, :, :]
-            self.data["corr2"] = self.data["corr"][1, :, :]
-            self.data["corr3"] = self.data["corr"][2, :, :]
-            self.data["corr4"] = self.data["corr"][3, :, :]
+            self.data["corr1"] = self.data["corr"][0, depth_mask, :]
+            self.data["corr2"] = self.data["corr"][1, depth_mask, :]
+            self.data["corr3"] = self.data["corr"][2, depth_mask, :]
+            self.data["corr4"] = self.data["corr"][3, depth_mask, :]
             self.data["prcnt_gd"] = dlfn_subset.prcnt_gd.values.astype(float)
-            self.data["prcnt_gd1"] = self.data["prcnt_gd"][0, :, :]
-            self.data["prcnt_gd2"] = self.data["prcnt_gd"][1, :, :]
-            self.data["prcnt_gd3"] = self.data["prcnt_gd"][2, :, :]
-            self.data["prcnt_gd4"] = self.data["prcnt_gd"][3, :, :]
+            self.data["prcnt_gd1"] = self.data["prcnt_gd"][0, depth_mask, :]
+            self.data["prcnt_gd2"] = self.data["prcnt_gd"][1, depth_mask, :]
+            self.data["prcnt_gd3"] = self.data["prcnt_gd"][2, depth_mask, :]
+            self.data["prcnt_gd4"] = self.data["prcnt_gd"][3, depth_mask, :]
             self.data["heading"] = dlfn_subset.heading.values
             self.data["roll"] = dlfn_subset["roll"].values
             self.data["pitch"] = dlfn_subset.pitch.values
             self.data["time"] = dlfn_subset.timestamp.values.astype(float)
-            self.data["depth"] = z0
-            self.data["u"] = dlfn_subset.vel[0, :, :].values # Eastward velocity
-            self.data["v"] = dlfn_subset.vel[1, :, :].values # Northward velocity
-            self.data["w"] = dlfn_subset.vel[2, :, :].values # Upward velocity
+            self.data["u"] = dlfn_subset.vel[0, depth_mask, :].values # Eastward velocity
+            self.data["v"] = dlfn_subset.vel[1, depth_mask, :].values # Northward velocity
+            self.data["w"] = dlfn_subset.vel[2, depth_mask, :].values # Upward velocity
+            echo = dlfn_subset.amp.values.astype(float)[:, depth_mask, :]
             self.data["echo"] = echo
             self.data["echo1"] = echo[0, :, :]
             self.data["echo2"] = echo[1, :, :]
@@ -171,6 +173,7 @@ class ADCP(GenericInstrument):
             # Battery not available in the new dolfyn version
             self.data["battery"]=np.full(self.data["roll"].shape,np.nan)
             self.data["temp"]=dlfn_subset.temp.values
+            self.dimensions["depth"]["dim_size"] = len(self.data["depth"])
             return True
         except:
             self.log.info("Failed to process {}.".format(file))
@@ -251,7 +254,11 @@ class ADCP(GenericInstrument):
         self.data["u"] = moving_average_filter(self.data["u"])
         self.data["v"] = moving_average_filter(self.data["v"])
         self.data["w"] = moving_average_filter(self.data["w"])
-        
+
+        self.data["vel_mag"] = (self.data["u"] ** 2 + self.data["v"] ** 2) ** 0.5
+
+        self.variables = {k: v for k, v in self.variables.items() if "_qual" not in k}
+
         self.log.info("Absolute backscatter", indent=2)
         if "battery" in self.data.keys() and np.sum(~np.isnan(self.data["battery"]))>0: # Battery values available  
             self.data["Sv"] = absolute_backscatter(self.data["echo"], self.data["temp"],

@@ -145,7 +145,7 @@ class GenericInstrument:
                     for key, values in dimensions.items():
                         nc.createDimension(values['dim_name'], values['dim_size'])
                     for key, values in variables.items():
-                        var = nc.createVariable(values["var_name"], np.float64, values["dim"], fill_value=np.nan)
+                        var = nc.createVariable(values["var_name"], np.float64, values["dim"], fill_value=np.nan, zlib=True, complevel=4, shuffle=True)
                         var.units = values["unit"]
                         var.long_name = values["long_name"]
                         if profile_to_grid and key == time_label:

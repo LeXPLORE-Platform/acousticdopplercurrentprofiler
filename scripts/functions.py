@@ -18,9 +18,22 @@ def retrieve_new_files(folder, creds, server_location=["data"], filetype=".csv",
         for file in server_files:
             file_name = os.path.basename(file)
             if file.endswith(filetype):
-                log.info("Downloading file {}".format(file), indent=2)
-                #download_file(file, os.path.join(folder, file_name), ftp)
-                files.append(os.path.join(folder, file_name))
+                if file_name.startswith("L3"):
+                    subfolder = "RDI300"
+                else:
+                    subfolder = "RDI600"
+                local_path = os.path.join(folder, subfolder, file_name)
+                try:
+                    if os.path.exists(local_path) and ftp.size(file) <= os.path.getsize(local_path):
+                        log.info("Skipping file with identical size.", indent=2)
+                        continue
+                except Exception as e:
+                    log.info("Could not retrieve size for {}.".format(file), indent=2)
+                    pass
+
+                log.info("Downloading file {}".format(os.path.join(folder, subfolder, file_name)), indent=2)
+                download_file(file, local_path, ftp)
+                files.append(local_path)
     files.sort()
     return files
 
@@ -366,7 +379,10 @@ def select_parameters(file, parameters):
     else:
         raise ValueError('Unrecognised file input string')
     try:
-        dt = datetime.strptime(os.path.normpath(file).split(os.path.sep)[-2], '%Y%m%d')
+        if len(os.path.basename(file).split("_")) > 3:
+            dt = datetime.strptime(os.path.basename(file).split("_")[1].split("T")[0], '%Y%m%d')
+        else:
+            dt = datetime.strptime(os.path.normpath(file).split(os.path.sep)[-2], '%Y%m%d')
         for i in range(len(parameters)):
             start = datetime.strptime(parameters[i]["start"], '%Y%m%d')
             if parameters[i]["end"] == "now":

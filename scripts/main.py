@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-import sys
-import yaml
 import json
-import time
 import argparse
-import requests
 from instruments import ADCP
 from general.functions import logger, files_in_directory
 from functions import retrieve_new_files, select_parameters
