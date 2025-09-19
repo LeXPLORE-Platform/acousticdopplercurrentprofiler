@@ -1,0 +1,47 @@
+﻿Date;Time(UTC);ID;Type;Paramteters;Comments;Operator;miscellaneous
+22.07.2020;10:12:00;1;Installation;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515";Deployment;Sébastien Lavanchy;ADCP_Installation schematics.pdf, ADCP_installation.jpg
+22.07.2020;10:12:00;1;Installation;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";Deployment;Sébastien Lavanchy;ADCP_Installation schematics.pdf, ADCP_installation.jpg
+24.07.2020;10:15:00;1;Installation;"Workhorse Sentinel ADCP;all;all;all";Online vmdas;Bieito Fernandez;RDI300_vmdas.ini, RDI600_vmdas.ini
+25.06.2021;07:29:00;2;Issue;"Workhorse Sentinel ADCP;all;all;all";ADCP caught in sedtrap line;Guillaume Cunillera;ADCP_sedtrap.jpg
+25.06.2021;12:00:00;2;Maintenance;"Workhorse Sentinel ADCP;all;all;all";Clean biofouling + quagga;Guillaume Cunillera;ADCP_quagga.jpg
+25.06.2021;17:33:00;2;Repair;"Workhorse Sentinel ADCP;all;all;all";ADCP back to water;Sébastien Lavanchy;
+31.08.2021;06:07:00;3;Issue;"Workhorse Sentinel ADCP;all;all;all";cable of the ADCP damaged;Philippe Quetin;
+02.09.2021;16:25:00;3;Repair;"Workhorse Sentinel ADCP;all;all;all";repaired and molded;Guillaume Cunillera;ADCP_mold.jpg
+31.05.2022;14:00:00;4;Issue;"Workhorse Sentinel ADCP;all;all;all";Mooring slid to South-East.  12m deep;Sébastien Lavanchy;
+04.01.2023;12:00:00;5;Recovery/removal;"Workhorse Sentinel ADCP;all;all;all";power turned on for ROV peration and maintenance tomorrow;Sébastien Lavanchy;
+05.01.2023;13:00:00;6;Issue;"Workhorse Sentinel ADCP;all;all;all";scratches on the 600 container, decision to send both for revisioin.;Michael Plüss;
+12.01.2023;12:00:00;6;Service Factory;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515";shipment ref : 25337 for the WH 600 SN 20515 ;;
+12.01.2023;12:00:00;6;Service Factory;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";shipment ref : 25338 for WH 300 SN 20360;;
+19.01.2023;10:12:00;7;Installation;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;1178";Deployment  temporary ADCP from EAWAG;Michael Plüss;
+19.01.2023;10:12:00;7;Installation;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20847";Deployment  temporary ADCP from EAWAG;Michael Plüss;
+03.04.2023;12:00:00;8;Service Factory;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515";Repaired and checked  at teledyne;Sébastien Lavanchy;20230403_SN20515_finaltest.pdf, 20230403_SN20515_repairreport.pdf
+12.04.2023;12:00:00;8;Service Factory;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515";20515 back from Teledyne. At EPFL;Guillaume Cunillera;
+19.04.2023;08:35:00;9;Recovery/removal;"Workhorse Sentinel ADCP;all;all;all";Out for Maintenance and 600Hz;Guillaume Cunillera;
+19.04.2023;00:00:00;9;Maintenance;"Workhorse Sentinel ADCP;all;all;all";Maintenance - cleaning.;Michael Plüss;
+19.04.2023;13:30:00;9;Deployment/reinstalled;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20847";ADCP 20360 still at teledynne;Guillaume Cunillera;
+19.04.2023;13:30:00;9;Recovery/removal;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;1178";1178 back at EAWAG;Guillaume Cunillera;
+19.04.2023;13:30:00;9;Deployment/reinstalled;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515";ADCP swap with 1178;Michael Plüss;
+13.07.2023;12:00:00;10;Service Factory;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";20360 back from teledyne. At EPFL;Guillaume Cunillera;
+18.10.2023;17:00:00;11;Installation;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";New deployement, at the bottom looking up. N 45.50081°, E 006.65897;Sébastien Lavanchy;
+19.10.2023;07:30:00;11;Installation;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";vmDAS started on computer LéXPLORE_01;Sébastien Lavanchy;
+19.10.2023;11:00:00;11;Recovery/removal;"Workhorse Sentinel ADCP;all;all;all";Out for maintenance 20515 and 20847;Guillaume Cunillera;
+19.10.2023;11:10:00;11;Maintenance;"Workhorse Sentinel ADCP;all;all;all";Cleaning mussels;Michael Plüss;
+19.10.2023;11:45:00;11;Deployment/reinstalled;"Workhorse Sentinel ADCP;all;all;all";Back in water;Guillaume Cunillera;
+19.10.2023;13:00:00;11;Installation;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";Check cable installation with ROV;Guillaume Cunillera;
+12.01.2024;16:00:00;12;Other;"Workhorse Sentinel ADCP;all;all;all";Vmdas software restarted;Guillaume Cunillera;
+06.03.2024;10:00:00;13;Recovery/removal;"Workhorse Sentinel ADCP;all;all;all";Maintenance - cleaning.;Jérémy Keller;
+06.03.2024;10:15:00;13;Maintenance;"Workhorse Sentinel ADCP;all;all;all";Maintenance - cleaning.;Jérémy Keller;
+06.03.2024;11:00:00;13;Deployment/reinstalled;"Workhorse Sentinel ADCP;all;all;all";Back in water after cleaning;Jérémy Keller;
+07.04.2024;18:00:00;14;Issue;"Workhorse Sentinel ADCP;all;all;all";PC1 froze.;Guillaume Cunillera;
+08.04.2024;08:00:00;14;Repair;"Workhorse Sentinel ADCP;all;all;all";PC1 restart;Guillaume Cunillera;
+11.07.2024;07:40:00;15;Recovery/removal;"Workhorse Sentinel ADCP;all;all;all";Maintenance, cleaning and deeper installation. Reinstallation aborted due to the winch of the boat (tore off attachment points);Guillaume Cunillera;
+18.07.2024;12:00:00;15;Other;"Workhorse Sentinel ADCP;all;all;all";mooring reinstalled 17m deeper. (No cable left for a new deployment closer to the surface.). Maybe deeper than intended ? 600 should be able to measure between 25m and the surface. Not running;Guillaume Cunillera;
+19.07.2024;12:00:00;15;Deployment/reinstalled;"Workhorse Sentinel ADCP;all;all;all";new settings, 600 : 40m range (160x0,25bins) - 300 : 85m range (85x1m bins). Running now, may have to adapt the settings.;Guillaume Cunillera;20240709_new_settings_25m
+23.07.2024;12:00:00;16;Recovery/removal;"Workhorse Sentinel ADCP;all;all;all";recovery to measure the depth : 27.7m (top of the structure, 28m 600, 29m 300);Guillaume Cunillera;
+23.07.2024;13:00:00;16;Deployment/reinstalled;"Workhorse Sentinel ADCP;all;all;all";redeployed a bit more North-West, depth is now : 26m for the 600 and 27m for the 300;Guillaume Cunillera;
+13.08.2025;09:00:00;17;Recovery/removal;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515";recovery for cleaning;Guillaume Cunillera;
+13.08.2025;09:00:00;17;Recovery/removal;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";;Guillaume Cunillera;
+13.08.2025;16:00:00;17;Deployment/reinstalled;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515";deployment at good depth (yellow tape a bit under water because rope a bit shorter);Guillaume Cunillera;
+13.08.2025;16:00:00;17;Deployment/reinstalled;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";deployment at good depth (yellow tape a bit under water because rope a bit shorter);Guillaume Cunillera;
+13.08.2025;16:00:00;18;Other;"Workhorse Sentinel ADCP;Surface Current velocity ;WHS600 600kHz;20515";transfer to new host computer PC1V2 - com 3;Guillaume Cunillera;
+13.08.2025;16:00:00;18;Other;"Workhorse Sentinel ADCP;Deep Current velocity ;WHS300 300kHz;20360";transfer to new host computer PC1V2 - com 4;Guillaume Cunillera;
