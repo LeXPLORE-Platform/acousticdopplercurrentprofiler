@@ -88,7 +88,7 @@ class GenericInstrument:
 #        except:
 #            self.log.error("Unable to apply QA file, this is likely due to bad formatting of the file.")
 
-    def export(self, folder, title, output_period="file", time_label="time", profile_to_grid=False, overwrite=False):
+    def export(self, folder, title, output_period="file", time_label="time", profile_to_grid=False, overwrite=False, remove_existing=False):
         if profile_to_grid:
             variables = self.grid_variables
             dimensions = self.grid_dimensions
@@ -136,6 +136,9 @@ class GenericInstrument:
                 indent=2)
 
             valid_time = (time >= datetime.timestamp(file_start)) & (time <= datetime.timestamp(file_end))
+
+            if os.path.isfile(out_file) and remove_existing:
+                os.remove(out_file)
 
             if not os.path.isfile(out_file):
                 self.log.info("Creating new file.", indent=3)

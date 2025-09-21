@@ -44,10 +44,10 @@ def main(server=False, logs=False):
         p = select_parameters(file, parameter_dict)
         if sensor.read_data(file, transducer_depth=p["transducer_depth"], bottom_depth=p["bottom_depth"], cabled=p["cabled"], up=p["up"]):
             sensor.quality_flags(envass_file=os.path.join(repo, "notes/quality_assurance.json"), adcp_file=os.path.join(repo, 'notes/quality_specific_adcp.json'))
-            edited_files.extend(sensor.export(os.path.join(directories["Level1"], "RDI" + p["bandwidth"]), "L1_ADCP", output_period="file"))
+            edited_files.extend(sensor.export(os.path.join(directories["Level1"], "RDI" + p["bandwidth"]), "L1_ADCP", output_period="file", remove_existing=True))
             sensor.mask_data()
             sensor.derive_variables(p["rotate_velocity"])
-            edited_files.extend(sensor.export(os.path.join(directories["Level2"], "RDI" + p["bandwidth"]), "L2_ADCP", output_period="file"))
+            edited_files.extend(sensor.export(os.path.join(directories["Level2"], "RDI" + p["bandwidth"]), "L2_ADCP", output_period="file", remove_existing=True))
     log.end_stage()
 
     return edited_files
