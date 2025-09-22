@@ -7,7 +7,7 @@
 The data presented here is part of the core dataset maintained by the technical team of LéXPLORE.
 The data is used and displayed on the [Datalakes website](https://www.datalakes-eawag.ch/) where other related data or products can be visualised and downloaded.
 
-The specific dataset contains raw and processed data recorded by two acoustic Doppler current profilers (ADCPs): an upward-looking RDI 600 kHz samples near-surface waters and a downward-looking RDI 300 kHz samples deep waters. Data includes backscattering and 3D water velocities (see [data section](#data)).
+The specific dataset contains raw and processed data recorded by three acoustic Doppler current profilers (ADCPs): an upward-looking RDI 600 kHz and a downward-looking RDI 300 kHz sample near-surface and deep waters in the LéXPLORE perimeter, respectively, and an upward-looking RDI 300 kHz samples the entire water column outside the LéXPLORE perimeter. Data includes backscattering and 3D water velocities (see [data section](#data)).
 
 **References**:
 
@@ -33,23 +33,31 @@ The two different ADCPs used to cover the water column near LéXPLORE are cable 
 - **System integration**: VmDAS
 - **Accuracy**:             ​±0.3% of measured velocity ± 0.3 cm/s
 - **Setup**:                Bin size: 0.25 m; Averaging ensemble interval: 10 minutes; Number of pings per ensemble varies with the deployment period
-- **Deployment depth**: varies with the deployment period (8-28 m), see `scripts/parameters.json` for more information
+- **Deployment depth**: varies with the deployment period (8-28 m), see `notes/parameters.json` for more information
 
 ### Downward-looking RDI 300 kHz (deep velocities and backscattering)
 - **Brand, Model & SN**:    Teledyne RD Instruments, Workhorse Sentinel 300 kHz, SN 20360 (before 12.01.2023), SN 20847 (after 19.01.2023)
 - **System integration**: VmDAS
 - **Accuracy**:             ±1.0% of measured velocity ± 0.5 cm/s
 - **Setup**:                Bin size: 1 m; Averaging ensemble interval: 10 minutes; Number of pings per ensemble varies with the deployment period
-- **Deployment depth**: varies with the deployment period (8-29 m), see `scripts/parameters.json` for more information
+- **Deployment depth**: varies with the deployment period (8-29 m), see `notes/parameters.json` for more information
 
-More information about Workhorse Sentinel ADCPs can be found in the manuals in the foler `notes`.
+### Upward-looking RDI 300 kHz (velocities and backscattering over the entire water column)
+- **Brand, Model & SN**:    Teledyne RD Instruments, Workhorse Sentinel 300 kHz, SN 20360
+- **System integration**: VmDAS
+- **Accuracy**:             ±1.0% of measured velocity ± 0.5 cm/s
+- **Setup**:                Bin size: 1 m; Averaging ensemble interval: 10 minutes; 584 pings per ensemble
+- **Deployment depth**: 81 m, see `notes/parameters.json` for more information
+
+More information about Workhorse Sentinel ADCPs can be found in the manuals in the folder `notes`.
 
 ## Geospatial Information
 
-The two ADCPs are deployed 35 m north-east of LéXPLORE: 46°30′02.057″N, 6°39′39.741″E.
+The two first ADCPs are deployed 35 m north-east of LéXPLORE: 46°30′02.057″N, 6°39′39.741″E.
+The upward-looking RDI 300 kHz is deployed to the west of the LéXPLORE perimeter: 46°30′02.92″N, 6°39′32.29″E.
 
 ## Temporal coverage 
-- start: July 2020
+- start: July 2020 for the two first ADCPs, October 2023 for the upward-looking RDI 300 kHz
 - stop: live dataset
 
 ## Scripts
@@ -81,16 +89,16 @@ In order to process new data locally on your machine the file path needs to be a
 
 - Edit the `scripts/input_python.py` file. Change all the directory paths to match your local file system. This file contains all the directories where the python script outputs data to.
 
-To process new data, place the data in the input directory which you specified in the `scripts/input_batch.bat` file. Update `scripts/parameters.json` if the ADCPs configuration has changed compared to the previous deployment period (e.g., deployment depth, orientation). Double-clicking on the `runfile.bat` file will automatically 
+To process new data, place the data in the input directory which you specified in the `scripts/input_batch.bat` file. Update `notes/parameters.json` if the ADCPs configuration has changed compared to the previous deployment period (e.g., deployment depth, orientation). Double-clicking on the `runfile.bat` file will automatically 
 process all the data in the input directory and store the output in the directories specified in the `scripts/input_python.py` file. 
 
 ### Adapt/Extend data processing pipeline
 
-The python script `scripts/main.py` defines the different processing steps while the python script `scripts/adcp.py` contains the python class ADCP with all the corresponding 
-class methods to process the data. To add a new processing or visualization step, a new class method can be created in the `adcp.py` file and the step can be added in `main.py` file.
+The python script `scripts/main.py` defines the different processing steps while the python script `scripts/instruments.py` contains the python class ADCP with all the corresponding 
+class methods to process the data. To add a new processing or visualization step, a new class method can be created in the `instruments.py` file and the step can be added in `main.py` file.
 Both above mentioned python scripts are independent of the local file system.
 
-In addition, `scripts/functions.py` and `scripts/general_functions.py` contain ADCP-specific and more general functions, respectively. ADCP-specific quality checks are defined as functions in `scripts/quality_checks_adcp.py`. The script `scripts/quality_assurance.py` runs advanced quality checks based on `quality_assurance.json`. The notebook `notebooks/define_quality_assurance.ipynb` can help to run advanced quality checks from envass. The functions `scripts/download_data.py` and `scripts/upload_data.py` are used to download and upload data, respectively, between the local repository and the cloud (see `data/README.md` for more information). 
+In addition, `scripts/functions.py` and `scripts/general/functions.py` contain ADCP-specific and more general functions, respectively. ADCP-specific quality checks are defined as functions in `scripts/quality_checks_adcp.py` using the parameters define in `notes/quality_specific_adcp.json`. The script `scripts/quality_assurance.py` runs advanced quality checks based on `notes/quality_assurance.json`. The notebook `notebooks/define_quality_assurance.ipynb` can help to run advanced quality checks from envass. The functions `scripts/download_data.py` and `scripts/upload_data.py` are used to download and upload data, respectively, between the local repository and the cloud (see `data/README.md` for more information). 
 
 ## Data
 
@@ -125,22 +133,22 @@ quality checks and further investigation is needed (see section [quality assuran
     * upward velocity, *w* (depth,time) [m s^(-1)]
     * temperature, *temp* (time) [°C]
     * velocity error, *vel_err* (depth,time) [m s^(-1)]
-    * echo amplitude from beam #1, *echo1* (depth,time) [counts]
-    * echo amplitude from beam #2, *echo2* (depth,time) [counts]
-    * echo amplitude from beam #3, *echo3* (depth,time) [counts]
-    * echo amplitude from beam #4, *echo4* (depth,time) [counts]
-    * correlation from beam #1, *corr1* (depth,time) [counts]
-    * correlation from beam #2, *corr2* (depth,time) [counts]
-    * correlation from beam #3, *corr3* (depth,time) [counts]
-    * correlation from beam #4, *corr4* (depth,time) [counts]
-    * percentage good #1 (percentage of data obtained with 3 beams due to one beam with bad data), *prcnt_gd1* (depth,time) [%]
-    * percentage good #2 (percentage of data with lower velocity error than threshold), *prcnt_gd2* (depth,time) [%]
-    * percentage good #3 (percentage of data rejected because more than one beam with bad data), *prcnt_gd3* (depth,time) [%]
-    * percentage good #4 (percentage of data obtained with 4 beams), *prcnt_gd4* (depth,time) [%]
+    * echo amplitude from beam 1, *echo1* (depth,time) [counts]
+    * echo amplitude from beam 2, *echo2* (depth,time) [counts]
+    * echo amplitude from beam 3, *echo3* (depth,time) [counts]
+    * echo amplitude from beam 4, *echo4* (depth,time) [counts]
+    * correlation from beam 1, *corr1* (depth,time) [counts]
+    * correlation from beam 2, *corr2* (depth,time) [counts]
+    * correlation from beam 3, *corr3* (depth,time) [counts]
+    * correlation from beam 4, *corr4* (depth,time) [counts]
+    * percentage good 1 (percentage of data obtained with 3 beams due to one beam with bad data), *prcnt_gd1* (depth,time) [%]
+    * percentage good 2 (percentage of data with lower velocity error than threshold), *prcnt_gd2* (depth,time) [%]
+    * percentage good 3 (percentage of data rejected because more than one beam with bad data), *prcnt_gd3* (depth,time) [%]
+    * percentage good 4 (percentage of data obtained with 4 beams), *prcnt_gd4* (depth,time) [%]
     * battery level, *battery* (time) [counts]
-    * pitch angle (rotation around x-axis going from beam #1 to beam #2), *pitch* (time) [°]
-    * roll angle (rotation around y-axis going from beam #3 to beam #4), *roll* (time) [°]
-    * heading angle (rotation around z-axis, 0° if beam #3 is facing north), *heading* (time) [°]
+    * pitch angle (rotation around x-axis going from beam 1 to beam 2), *pitch* (time) [°]
+    * roll angle (rotation around y-axis going from beam 3 to beam 4), *roll* (time) [°]
+    * heading angle (rotation around z-axis, 0° if beam 3 is facing north), *heading* (time) [°]
     * depth-averaged velocity magnitude, *mU* (time) [m s^(-1)]
     * direction of depth-averaged velocity (anticlockwise from east), *mdir* (time) [°]
     * absolute backscatter, *Sv* (depth,time) [dB]
@@ -170,7 +178,7 @@ dt <- anytime(unixdatetime)
 ## Quality assurance
 
 ### Basic checks
-Quality checks include but are not limited to range validation, data type checking and flagging missing data. The basic quality checks are defined in `quality_assurance.json` and include the following tests (flag index is "1" if the test is not passed, "0" otherwise):
+Quality checks include but are not limited to range validation, data type checking and flagging missing data. The basic quality checks are defined in `notes/quality_assurance.json` and include the following tests (flag index is "1" if the test is not passed, "0" otherwise):
 * "time": numeric, bounds: [1514764800, "now"],
 * "u": numeric, bounds: [-5, 5],
 * "v": numeric, bounds: [-5, 5],
@@ -178,8 +186,8 @@ Quality checks include but are not limited to range validation, data type checki
 
 ### ADCP-specific tests
 
-In addition, the following ADCP-specific tests are performed to increase the flag index of "u", "v" and "w" following a base 2 format (see function `scripts/quality_checks_adcp.py` for the tests):
-* interface detection (flag index: 2): data above the surface (upward ADCP) or below the lake bottom (downward ADCP) is flagged based on the transducer depth and bottom depth specified in `scripts/parameters.json`.
+In addition, the following ADCP-specific tests are performed to increase the flag index of "u", "v" and "w" following a base 2 format (see function `scripts/quality_checks_adcp.py` for the tests and file `notes/quality_specific_adcp.json` for the parameters values):
+* interface detection (flag index: 2): data above the surface (upward ADCP) or below the lake bottom (downward ADCP) is flagged based on the transducer depth and bottom depth specified in `notes/parameters.json`.
 * minimum correlation (flag index: 4): data with at least one beam below a correlation threshold is flagged (default threshold: 64 counts).
 * minimum good data percentage (flag index: 8): data with PG1+PG4 < threshold is flagged (default threshold: 25 %).
 * maximum bad data percentage (flag index: 16): data with PG3 > threshold is flagged (default threshold: 25 %).
