@@ -12,6 +12,15 @@
         "rotate_velocity": 0,
         "cabled": "True"
       },
+      "300ext": {
+        "bandwidth": "300",
+        "transducer_depth": 81,
+        "bottom_depth": 81,
+        "up": "True",
+        "irt": 144,
+        "rotate_velocity": 0,
+        "cabled": "True"
+      },
       "600": {
         "bandwidth": "600",
         "transducer_depth": 8,
@@ -36,6 +45,15 @@
         "rotate_velocity": 0,
         "cabled": "True"
       },
+      "300ext": {
+        "bandwidth": "300",
+        "transducer_depth": 81,
+        "bottom_depth": 81,
+        "up": "True",
+        "irt": 144,
+        "rotate_velocity": 0,
+        "cabled": "True"
+      },
       "600": {
         "bandwidth": "600",
         "transducer_depth": 27.5,
@@ -56,6 +74,15 @@
         "transducer_depth": 27,
         "bottom_depth": 100,
         "up": "False",
+        "irt": 144,
+        "rotate_velocity": 0,
+        "cabled": "True"
+      },
+      "300ext": {
+        "bandwidth": "300",
+        "transducer_depth": 81,
+        "bottom_depth": 81,
+        "up": "True",
         "irt": 144,
         "rotate_velocity": 0,
         "cabled": "True"
