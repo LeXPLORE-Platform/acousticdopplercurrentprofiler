@@ -5,6 +5,7 @@
     "data": {
       "300": {
         "bandwidth": "300",
+        "name": "RDI300",
         "transducer_depth": 8,
         "bottom_depth": 100,
         "up": "False",
@@ -12,8 +13,9 @@
         "rotate_velocity": 0,
         "cabled": "True"
       },
-      "300ext": {
+      "300_UP": {
         "bandwidth": "300",
+        "name": "RDI300_UP",
         "transducer_depth": 81,
         "bottom_depth": 81,
         "up": "True",
@@ -23,6 +25,7 @@
       },
       "600": {
         "bandwidth": "600",
+        "name": "RDI600",
         "transducer_depth": 8,
         "bottom_depth": 100,
         "up": "True",
@@ -38,6 +41,7 @@
     "data": {
       "300": {
         "bandwidth": "300",
+        "name": "RDI300",
         "transducer_depth": 28.5,
         "bottom_depth": 100,
         "up": "False",
@@ -45,8 +49,9 @@
         "rotate_velocity": 0,
         "cabled": "True"
       },
-      "300ext": {
+      "300_UP": {
         "bandwidth": "300",
+        "name": "RDI300_UP",
         "transducer_depth": 81,
         "bottom_depth": 81,
         "up": "True",
@@ -56,6 +61,7 @@
       },
       "600": {
         "bandwidth": "600",
+        "name": "RDI600",
         "transducer_depth": 27.5,
         "bottom_depth": 100,
         "up": "True",
@@ -71,6 +77,7 @@
     "data": {
       "300": {
         "bandwidth": "300",
+        "name": "RDI300",
         "transducer_depth": 27,
         "bottom_depth": 100,
         "up": "False",
@@ -78,8 +85,9 @@
         "rotate_velocity": 0,
         "cabled": "True"
       },
-      "300ext": {
+      "300_UP": {
         "bandwidth": "300",
+        "name": "RDI300_UP",
         "transducer_depth": 81,
         "bottom_depth": 81,
         "up": "True",
@@ -89,6 +97,7 @@
       },
       "600": {
         "bandwidth": "600",
+        "name": "RDI600",
         "transducer_depth": 26,
         "bottom_depth": 100,
         "up": "True",
