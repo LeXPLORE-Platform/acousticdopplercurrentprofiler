@@ -373,7 +373,10 @@ def isnt_number(n):
 
 def select_parameters(file, parameters):
     if "RDI300" in file:
-        instrument = "300"
+        if "RDI300ext" in file:
+            instrument = "300ext" # External upward adcp
+        else:      
+            instrument = "300" # LéXPLORE downward adcp  
     elif "RDI600" in file:
         instrument = "600"
     else:
