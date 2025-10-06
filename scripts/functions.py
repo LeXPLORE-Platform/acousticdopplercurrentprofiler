@@ -19,7 +19,10 @@ def retrieve_new_files(folder, creds, server_location=["data"], filetype=".csv",
             file_name = os.path.basename(file)
             if file.endswith(filetype):
                 if file_name.startswith("L3"):
-                    subfolder = "RDI300"
+                    if "_up" in location:
+                        subfolder = "RDI300_UP"
+                    else:
+                        subfolder = "RDI300"
                 else:
                     subfolder = "RDI600"
                 local_path = os.path.join(folder, subfolder, file_name)
@@ -372,11 +375,10 @@ def isnt_number(n):
 
 
 def select_parameters(file, parameters):
-    if "RDI300" in file:
-        if "RDI300ext" in file:
-            instrument = "300ext" # External upward adcp
-        else:      
-            instrument = "300" # LéXPLORE downward adcp  
+    if "RDI300_UP" in file:
+        instrument = "300_UP"
+    elif "RDI300" in file:
+        instrument = "300"
     elif "RDI600" in file:
         instrument = "600"
     else:
