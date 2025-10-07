@@ -179,7 +179,7 @@ class ADCP(GenericInstrument):
             self.log.info("Failed to process {}.".format(file))
             return False
 
-    def quality_flags(self, envass_file = './quality_assurance.json', adcp_file='./quality_specific_adcp.json', simple=True):
+    def quality_flags(self, envass_file = './quality_assurance.json', adcp_file='./quality_specific_adcp.json', instrument_parameters=dict(), simple=True):
 
         self.log.info("Performing quality assurance", indent=1)
         self.log.info("ADCP-specific quality checks",indent=2) # Additional ADCP tests on the velocity matrix, increases qa with a base-2 approach (check#2 returns 0 or 2, chech#3 returns 0 or 4, etc.)
@@ -195,25 +195,32 @@ class ADCP(GenericInstrument):
                 qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=self.general_attributes["beam_angle"])
         
         if "corr" in quality_adcp_dict["tests"].keys():
-            qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],corr_threshold=quality_adcp_dict["tests"]["corr"]["corr_threshold"])
+            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"corr")
+            qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],corr_threshold=test_param["corr_threshold"])
         
         if "PG14" in quality_adcp_dict["tests"].keys():
-            qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"],percentage_threshold=quality_adcp_dict["tests"]["PG14"]["percentage_threshold"])
+            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"PG14")
+            qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"],percentage_threshold=test_param["percentage_threshold"])
         
         if "PG3" in quality_adcp_dict["tests"].keys():
-            qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"],percentage_threshold=quality_adcp_dict["tests"]["PG3"]["percentage_threshold"])
+            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"PG3")
+            qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"],percentage_threshold=test_param["percentage_threshold"])
         
         if "velerror" in quality_adcp_dict["tests"].keys():
-            qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"],vel_threshold=quality_adcp_dict["tests"]["velerror"]["vel_threshold"])
+            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"velerror")
+            qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"],vel_threshold=test_param["vel_threshold"])
         
         if "tilt" in quality_adcp_dict["tests"].keys():
-            qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"],tilt_threshold=quality_adcp_dict["tests"]["tilt"]["tilt_threshold"])
+            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"tilt")
+            qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"],tilt_threshold=test_param["tilt_threshold"])
         
         if "corrstd" in quality_adcp_dict["tests"].keys():
-            qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],std_threshold=quality_adcp_dict["tests"]["corrstd"]["std_threshold"])
+            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"corrstd")
+            qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],std_threshold=test_param["std_threshold"])
         
         if "echodiff" in quality_adcp_dict["tests"].keys():
-            qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"],diff_threshold=quality_adcp_dict["tests"]["echodiff"]["diff_threshold"])
+            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"echodiff")
+            qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"],diff_threshold=test_param["diff_threshold"])
         
         self.log.info("envass quality checks", indent=2) # Corresponds to quality check #1: qa is 0 (all good) or 1 (flagged)
         quality_assurance_dict = json_converter(json.load(open(envass_file))) # Load parameters related to simple and advanced quality checks

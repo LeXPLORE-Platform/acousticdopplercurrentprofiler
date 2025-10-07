@@ -375,7 +375,7 @@ def isnt_number(n):
 
 
 def select_parameters(file, parameters):
-    if "RDI300_UP" in file:
+    if "RDI300_UP" in file: 
         instrument = "300_UP"
     elif "RDI300" in file:
         instrument = "300"
@@ -437,3 +437,11 @@ def filter_file(file):
         return True
     else:
         return False
+    
+def get_test_param(p,quality_adcp_dict,test_name):
+    if test_name in p.keys():
+        test_param=p[test_name]
+    else:
+        test_param=quality_adcp_dict["tests"][test_name]
+    
+    return test_param
