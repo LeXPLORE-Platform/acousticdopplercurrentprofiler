@@ -1,0 +1,17 @@
+{
+"velocity_flag":{
+    "variables": ["u","v","w"], 
+    "tests": {
+        "interface":{},
+        "corr":{"corr_threshold":64},
+        "PG14":{"percentage_threshold":25},
+        "PG3":{"percentage_threshold":25},
+        "velerror":{"vel_threshold":0.07},
+        "tilt":{"tilt_threshold":15},
+        "corrstd":{"std_threshold":0.02},
+        "echodiff":{"diff_threshold":30}}},
+"echo_flag":{
+    "variables": ["echo"], 
+    "tests": {"interface":{}}
+    }
+}
