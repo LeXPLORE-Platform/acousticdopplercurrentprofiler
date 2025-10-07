@@ -21,7 +21,8 @@
         "up": "True",
         "irt": 144,
         "rotate_velocity": 0,
-        "cabled": "True"
+        "cabled": "True",
+        "tilt":{"tilt_threshold":20}
       },
       "600": {
         "bandwidth": "600",
@@ -57,7 +58,8 @@
         "up": "True",
         "irt": 144,
         "rotate_velocity": 0,
-        "cabled": "True"
+        "cabled": "True",
+        "tilt":{"tilt_threshold":20}
       },
       "600": {
         "bandwidth": "600",
@@ -93,7 +95,8 @@
         "up": "True",
         "irt": 144,
         "rotate_velocity": 0,
-        "cabled": "True"
+        "cabled": "True",
+        "tilt":{"tilt_threshold":20}
       },
       "600": {
         "bandwidth": "600",
