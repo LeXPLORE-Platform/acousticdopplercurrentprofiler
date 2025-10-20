@@ -74,7 +74,7 @@ The upward-looking RDI 300 kHz is deployed to the west of the LéXPLORE perimete
 
 - Use conda and install the requirements with:
 
-- `conda env create -f environment.yml`
+`conda env create -f environment.yml`
 
 ### Process new data
 
