@@ -70,16 +70,11 @@ The upward-looking RDI 300 kHz is deployed to the west of the LéXPLORE perimete
 
 - Clone the repository to your local machine using the command: 
 
- `git clone  https://gitlab.renkulab.io/lexplore/acousticdopplercurrentprofiler`
+ `git clone  https://github.com/LeXPLORE-Platform/acousticdopplercurrentprofiler.git`
 
- Note that the repository will be copied to your current working directory.
+- Use conda and install the requirements with:
 
-- Use Python 3 and install the requirements with:
-
- `pip install -r requirements.txt`
-
- The python version can be checked by running the command `python --version`. In case python is not installed or only an older version of it, it is recommend to install python through the anaconda distribution which can be downloaded [here](https://www.anaconda.com/products/individual). 
-
+- `conda env create -f environment.yml`
 
 ### Process new data
 
