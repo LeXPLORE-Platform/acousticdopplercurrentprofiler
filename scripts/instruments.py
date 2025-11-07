@@ -3,7 +3,13 @@ import os
 import netCDF4
 import numpy as np
 import xarray as xr
-import dolfyn as dlfn
+#import dolfyn as dlfn
+#********* ADDED T. Doda **************
+# local dolfyn version
+import sys
+sys.path.append(r"C:\Users\tdoda\OneDrive - Université de Lausanne\External drive\PhD\Programming\Python")
+from dolfyn_1_3_0 import dolfyn as dlfn
+#**************************************
 import distutils.util
 from functions import *
 from datetime import datetime
@@ -185,42 +191,44 @@ class ADCP(GenericInstrument):
         self.log.info("ADCP-specific quality checks",indent=2) # Additional ADCP tests on the velocity matrix, increases qa with a base-2 approach (check#2 returns 0 or 2, chech#3 returns 0 or 4, etc.)
         quality_adcp_dict = json_converter(json.load(open(adcp_file))) # Load parameters related to simple and advanced quality checks
         
-        varname0=quality_adcp_dict["variables"][0]
-        qa_adcp=init_flag_adcp(np.array(self.data[varname0])) # Initial qa array (zero values)
+        # varname0=quality_adcp_dict["variables"][0]
+        # qa_adcp=init_flag_adcp(np.array(self.data[varname0])) # Initial qa array (zero values)
         
-        if "interface" in quality_adcp_dict["tests"].keys():
-            if self.general_attributes['up']=='True': # Upward looking: surface detection
-                qa_adcp=qa_adcp_interface_top(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],beam_angle=self.general_attributes["beam_angle"])
-            else: # Downward looking: sediment detection
-                qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=self.general_attributes["beam_angle"])
+        # if "interface" in quality_adcp_dict["tests"].keys():
+        #     if self.general_attributes['up']=='True': # Upward looking: surface detection
+        #         qa_adcp=qa_adcp_interface_top(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],beam_angle=self.general_attributes["beam_angle"])
+        #     else: # Downward looking: sediment detection
+        #         qa_adcp=qa_adcp_interface_bottom(qa_adcp,self.data["depth"],self.general_attributes['transducer_depth'],self.general_attributes['bottom_depth'],beam_angle=self.general_attributes["beam_angle"])
         
-        if "corr" in quality_adcp_dict["tests"].keys():
-            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"corr")
-            qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],corr_threshold=test_param["corr_threshold"])
+        # if "corr" in quality_adcp_dict["tests"].keys():
+        #     test_param=get_test_param(instrument_parameters,quality_adcp_dict,"corr")
+        #     qa_adcp=qa_adcp_corr(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],corr_threshold=test_param["corr_threshold"])
         
-        if "PG14" in quality_adcp_dict["tests"].keys():
-            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"PG14")
-            qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"],percentage_threshold=test_param["percentage_threshold"])
+        # if "PG14" in quality_adcp_dict["tests"].keys():
+        #     test_param=get_test_param(instrument_parameters,quality_adcp_dict,"PG14")
+        #     qa_adcp=qa_adcp_PG14(qa_adcp,self.data["prcnt_gd1"],self.data["prcnt_gd4"],percentage_threshold=test_param["percentage_threshold"])
         
-        if "PG3" in quality_adcp_dict["tests"].keys():
-            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"PG3")
-            qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"],percentage_threshold=test_param["percentage_threshold"])
+        # if "PG3" in quality_adcp_dict["tests"].keys():
+        #     test_param=get_test_param(instrument_parameters,quality_adcp_dict,"PG3")
+        #     qa_adcp=qa_adcp_PG3(qa_adcp,self.data["prcnt_gd3"],percentage_threshold=test_param["percentage_threshold"])
         
-        if "velerror" in quality_adcp_dict["tests"].keys():
-            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"velerror")
-            qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"],vel_threshold=test_param["vel_threshold"])
+        # if "velerror" in quality_adcp_dict["tests"].keys():
+        #     test_param=get_test_param(instrument_parameters,quality_adcp_dict,"velerror")
+        #     qa_adcp=qa_adcp_velerror(qa_adcp,self.data["eu"],vel_threshold=test_param["vel_threshold"])
         
-        if "tilt" in quality_adcp_dict["tests"].keys():
-            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"tilt")
-            qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"],tilt_threshold=test_param["tilt_threshold"])
+        # if "tilt" in quality_adcp_dict["tests"].keys():
+        #     test_param=get_test_param(instrument_parameters,quality_adcp_dict,"tilt")
+        #     qa_adcp=qa_adcp_tilt(qa_adcp,self.data["roll"],self.data["pitch"],tilt_threshold=test_param["tilt_threshold"])
         
-        if "corrstd" in quality_adcp_dict["tests"].keys():
-            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"corrstd")
-            qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],std_threshold=test_param["std_threshold"])
+        # if "corrstd" in quality_adcp_dict["tests"].keys():
+        #     test_param=get_test_param(instrument_parameters,quality_adcp_dict,"corrstd")
+        #     qa_adcp=qa_adcp_corrstd(qa_adcp,self.data["corr1"],self.data["corr2"],self.data["corr3"],self.data["corr4"],std_threshold=test_param["std_threshold"])
         
-        if "echodiff" in quality_adcp_dict["tests"].keys():
-            test_param=get_test_param(instrument_parameters,quality_adcp_dict,"echodiff")
-            qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"],diff_threshold=test_param["diff_threshold"])
+        # if "echodiff" in quality_adcp_dict["tests"].keys():
+        #     test_param=get_test_param(instrument_parameters,quality_adcp_dict,"echodiff")
+        #     qa_adcp=qa_adcp_echodiff(qa_adcp,self.data["echo1"],self.data["echo2"],self.data["echo3"],self.data["echo4"],diff_threshold=test_param["diff_threshold"])
+        
+        qa_adcp=adcp_flag_indices(self.data,self.general_attributes,quality_adcp_dict,instrument_parameters)
         
         self.log.info("envass quality checks", indent=2) # Corresponds to quality check #1: qa is 0 (all good) or 1 (flagged)
         quality_assurance_dict = json_converter(json.load(open(envass_file))) # Load parameters related to simple and advanced quality checks
@@ -231,6 +239,7 @@ class ADCP(GenericInstrument):
                 self.variables[name] = {'var_name': name, 'dim': values["dim"],
                                         'unit': '0 = nothing to report, 1 = more investigation',
                                         'long_name': name, }
+
                 if key in quality_adcp_dict["variables"] and self.data[key].shape==qa_adcp.shape:
                     prior_qa=qa_adcp
                 else:
