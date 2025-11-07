@@ -3,6 +3,77 @@ import copy
 import numpy as np
 from datetime import datetime
 
+def adcp_flag_indices(data_dict,gen_att,quality_adcp_dict,instrument_parameters=dict()):
+    """
+    Get the flag indices for all the ADCP-specific quality checks.
+
+    Parameters:
+        data_dict (dict): data variables from the ADCP object
+        gen_att (dict): general attributes from the ADCP object
+        instrument_parameters (dict): instrument and period-specific parameters (from "parameters.json" file)
+
+    Returns:
+        qa_adcp (numpy array of floats): flag indices with a base 2 format
+    """
+    
+    varname0=quality_adcp_dict["variables"][0]
+    qa_adcp=init_flag_adcp(np.array(data_dict[varname0])) # Initial qa array (zero values)
+    
+    if "interface" in quality_adcp_dict["tests"].keys():
+        if gen_att['up']=='True': # Upward looking: surface detection
+            qa_adcp=qa_adcp_interface_top(qa_adcp,data_dict["depth"],gen_att['transducer_depth'],beam_angle=gen_att["beam_angle"])
+        else: # Downward looking: sediment detection
+            qa_adcp=qa_adcp_interface_bottom(qa_adcp,data_dict["depth"],gen_att['transducer_depth'],gen_att['bottom_depth'],beam_angle=gen_att["beam_angle"])
+    
+    if "corr" in quality_adcp_dict["tests"].keys():
+        test_param=get_test_param(instrument_parameters,quality_adcp_dict,"corr")
+        qa_adcp=qa_adcp_corr(qa_adcp,data_dict["corr1"],data_dict["corr2"],data_dict["corr3"],data_dict["corr4"],corr_threshold=test_param["corr_threshold"])
+    
+    if "PG14" in quality_adcp_dict["tests"].keys():
+        test_param=get_test_param(instrument_parameters,quality_adcp_dict,"PG14")
+        qa_adcp=qa_adcp_PG14(qa_adcp,data_dict["prcnt_gd1"],data_dict["prcnt_gd4"],percentage_threshold=test_param["percentage_threshold"])
+    
+    if "PG3" in quality_adcp_dict["tests"].keys():
+        test_param=get_test_param(instrument_parameters,quality_adcp_dict,"PG3")
+        qa_adcp=qa_adcp_PG3(qa_adcp,data_dict["prcnt_gd3"],percentage_threshold=test_param["percentage_threshold"])
+    
+    if "velerror" in quality_adcp_dict["tests"].keys():
+        test_param=get_test_param(instrument_parameters,quality_adcp_dict,"velerror")
+        qa_adcp=qa_adcp_velerror(qa_adcp,data_dict["eu"],vel_threshold=test_param["vel_threshold"])
+    
+    if "tilt" in quality_adcp_dict["tests"].keys():
+        test_param=get_test_param(instrument_parameters,quality_adcp_dict,"tilt")
+        qa_adcp=qa_adcp_tilt(qa_adcp,data_dict["roll"],data_dict["pitch"],tilt_threshold=test_param["tilt_threshold"])
+    
+    if "corrstd" in quality_adcp_dict["tests"].keys():
+        test_param=get_test_param(instrument_parameters,quality_adcp_dict,"corrstd")
+        qa_adcp=qa_adcp_corrstd(qa_adcp,data_dict["corr1"],data_dict["corr2"],data_dict["corr3"],data_dict["corr4"],std_threshold=test_param["std_threshold"])
+    
+    if "echodiff" in quality_adcp_dict["tests"].keys():
+        test_param=get_test_param(instrument_parameters,quality_adcp_dict,"echodiff")
+        qa_adcp=qa_adcp_echodiff(qa_adcp,data_dict["echo1"],data_dict["echo2"],data_dict["echo3"],data_dict["echo4"],diff_threshold=test_param["diff_threshold"])
+        
+    return qa_adcp
+    
+def get_test_param(p,quality_adcp_dict,test_name):
+    """
+    Get the threshold value for the given quality test, either from the instrument parameters (if present) or from the default values specified in quality_adcp_dict.
+
+    Parameters:
+        p (dict): instrument and period-specific parameters (from "parameters.json" file)
+        quality_adcp_dict (dict): parameters of the ADCP-specific quality checks (from "quality_specific_adcp.json" file)
+        test_name (string): name of the quality test
+    Returns:
+        test_param (dict): parameters of the specified quality test
+    """
+    
+    if test_name in p.keys():
+        test_param=p[test_name]
+    else:
+        test_param=quality_adcp_dict["tests"][test_name]
+    
+    return test_param
+
 def init_flag_adcp(data_array):
     """
     Initialize the flag array.
