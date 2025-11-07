@@ -438,10 +438,3 @@ def filter_file(file):
     else:
         return False
     
-def get_test_param(p,quality_adcp_dict,test_name):
-    if test_name in p.keys():
-        test_param=p[test_name]
-    else:
-        test_param=quality_adcp_dict["tests"][test_name]
-    
-    return test_param
