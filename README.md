@@ -93,7 +93,7 @@ The python script `scripts/main.py` defines the different processing steps while
 class methods to process the data. To add a new processing or visualization step, a new class method can be created in the `instruments.py` file and the step can be added in `main.py` file.
 Both above mentioned python scripts are independent of the local file system.
 
-In addition, `scripts/functions.py` and `scripts/general/functions.py` contain ADCP-specific and more general functions, respectively. ADCP-specific quality checks are defined as functions in `scripts/quality_checks_adcp.py` using the parameters define in `notes/quality_specific_adcp.json`. The script `scripts/quality_assurance.py` runs advanced quality checks based on `notes/quality_assurance.json`. The notebook `notebooks/define_quality_assurance.ipynb` can help to run advanced quality checks from envass. The functions `scripts/download_data.py` and `scripts/upload_data.py` are used to download and upload data, respectively, between the local repository and the cloud (see `data/README.md` for more information). 
+In addition, `scripts/functions.py` and `scripts/general/functions.py` contain ADCP-specific and more general functions, respectively. ADCP-specific quality checks are defined as functions in `scripts/quality_checks_adcp.py` using the parameters define in `notes/quality_specific_adcp.json`. The notebook `notebooks/define_quality_assurance.ipynb` can help to run advanced quality checks from envass. The functions `scripts/download_data.py` and `scripts/upload_data.py` are used to download and upload data, respectively, between the local repository and the cloud (see `data/README.md` for more information). 
 
 ## Data
 
@@ -190,16 +190,20 @@ In addition, the following ADCP-specific tests are performed to increase the fla
 * maximum tilt (flag index: 64): data with either pitch or roll angle above a threshold is flagged (default threshold: 15°).
 * maximum 4-beams correlation difference (flag index: 128): data with differences in correlation ratio (0-1) between the 4 beams above a threshold is flagged (default standard deviation threshold: 0.01).
 * minimum vertical echo difference (flag index: 256): data with at least one beam with vertical echo difference between two consecutive bins above a threshold is flagged (default threshold: 30 counts).
+* event (flag index: 512): data within a maintenance or event period listed in `notes/events_<instrument>.csv` (see [Events](#events)).
 
 The flag indices can be found in the data variables "u_qual", "v_qual" and "w_qual" of the L1 and L2 products.
 
-### Advanced quality assurance
-
-Advanced quality assurance can be run using the `scripts/quality_assurance.py` function. 
-
 ###  Events 
 
-Maintenance dates, interesting or surprising events, non identified by the basic quality check are listed in `notes/events.csv`.
+Maintenance dates, interesting or surprising events, non identified by the basic quality check are listed per instrument in `notes/events_RDI300.csv`, `notes/events_RDI600.csv` and `notes/events_RDI300_UP.csv`.
+These events are applied to the quality flags (flag index 512 is added to `<variable>_qual`) when the data are processed to Level 1, so the flagged data are also masked in Level 2. Each file only applies to its own instrument. The files are semicolon separated with the columns `start;stop;parameter;depth;comments`:
+
+- `start`, `stop`: UTC, format `YYYYMMDD HH:MM:SS` (inclusive). An empty `stop` means the event is ongoing.
+- `parameter`: `All` or a comma separated list of variable names (e.g. `u,v,w`).
+- `depth`: empty or `All` for all depths, a comma separated list (e.g. `10,12.5`), a range (e.g. `10-20`) or a single value, in m. Values are matched to the nearest depth bin within half a bin; depths not present in a file are reported in the logs.
+- `comments`: free text description of the event.
+
 Check also `notes/sensor_history.csv`.
 
 ## Collaborators

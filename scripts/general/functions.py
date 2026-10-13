@@ -39,54 +39,44 @@ class GenericInstrument:
         else:
             self.log = logger()
 
-    def quality_assurance(self, file_path='./quality_assurance.json', maintenance_file = False, valid=False, time_label="time"):
-        self.log.info("Applying quality assurance", indent=2)
-
-        if not os.path.exists(file_path):
-            self.log.warning("Cannot find QA file: {}, no QA applied.".format(file_path), indent=2)
+    def apply_events(self, events_file, time_label="time", depth_label="depth", flag=1):
+        self.log.info("Applying events from {}".format(events_file), indent=2)
+        if not os.path.exists(events_file):
+            self.log.warning("Cannot find events file: {}, no events applied.".format(events_file), indent=2)
+            return False
+        events = parse_events(events_file, self.log)
+        if events is None:
             return False
 
-
-        # Maintenance periods or sensor issues
-        periods = []
-        if maintenance_file:
-            print("Processing maintenance periods from {}".format(maintenance_file))
-            df = pd.read_csv(maintenance_file, sep=";")
-            df["start"] = df["start"].apply(
-                lambda x: datetime.timestamp(datetime.strptime(x, '%Y%m%d %H:%M:%S').replace(tzinfo=timezone.utc)))
-            df["stop"] = df["stop"].apply(
-                lambda x: datetime.timestamp(datetime.strptime(x, '%Y%m%d %H:%M:%S').replace(tzinfo=timezone.utc)))
-            for d in df.to_dict('records'):
-                periods.append(d)
-
-#        try:
-        quality_assurance_dict = json_converter(json.load(open(file_path)))
-        for key, values in self.variables.copy().items():
-            if "_qual" not in key and key in quality_assurance_dict:
-                name = key + "_qual"
-                self.variables[name] = {'var_name': name, 'dim': values["dim"],
-                                        'unit': '0 = nothing to report, 1 = more investigation',
-                                        'long_name': name, }
-                if len(self.data[key]) == 1:
-                    self.data[name] = [1]
-                else:
-                    qa = qualityassurance(np.array(self.data[key]), np.array(self.data[time_label]),
-                                          **quality_assurance_dict[key]["simple"])
-                    if valid:
-                        time = np.array(self.data[time_label])
-                        if min(time) < valid[0] < max(time) and min(time) < valid[1] < max(time):
-                            qa[time < valid[0]] = 1
-                            qa[time > valid[1]] = 1
-
-                    if periods:
-                        for period in periods:
-                            time = np.array(self.data[time_label])
-                            #sensor_id_list = ast.literal_eval(period["sensor_id"])
-                            if key in period["parameter"]:
-                                qa[np.logical_and(time > period["start"],time < period["stop"])] = 1
-                        self.data[name] = qa
-#        except:
-#            self.log.error("Unable to apply QA file, this is likely due to bad formatting of the file.")
+        time = np.array(self.data[time_label], dtype=float)
+        events = events[(events["start"] <= np.nanmax(time)) & (events["stop"] >= np.nanmin(time))]
+        for _, event in events.iterrows():
+            variables = event_variables(event["parameter"], self.data.keys(), time_label=time_label)
+            for parameter in variables["unknown"]:
+                self.log.warning("Unknown parameter {} in events line {}".format(parameter, event["line"]), indent=3)
+            depth_idx = None
+            if depth_label in self.data:
+                depth_idx = parse_event_depths(event["depth"], self.data[depth_label], self.log, event["line"])
+                if depth_idx is False:
+                    continue
+            mask = (time >= event["start"]) & (time <= event["stop"])
+            if not variables["qual"] or not mask.any() or (depth_idx is not None and len(depth_idx) == 0):
+                self.log.warning("No matching variables, depths or timesteps for events line {}, nothing flagged.".format(event["line"]), indent=3)
+                continue
+            for var in variables["qual"]:
+                qual = np.array(self.data[var])
+                dims = self.variables[var]["dim"] if var in self.variables else (time_label,)
+                index = [np.arange(n) for n in qual.shape]
+                index[dims.index(time_label)] = np.where(mask)[0]
+                if depth_idx is not None and depth_label in dims:
+                    index[dims.index(depth_label)] = depth_idx
+                index = np.ix_(*index)
+                qual[index] = np.bitwise_or(qual[index].astype(int), flag)
+                self.data[var] = qual
+            depths = "all depths" if depth_idx is None else "{} depths".format(len(depth_idx))
+            self.log.info("{} ({}): flagged {} timesteps at {} for {}".format(
+                event["comments"], event["parameter"], int(mask.sum()), depths, ", ".join(variables["qual"])), indent=3)
+        return True
 
     def export(self, folder, title, output_period="file", time_label="time", profile_to_grid=False, overwrite=False, remove_existing=False):
         if profile_to_grid:
@@ -412,78 +402,65 @@ def pressure_correction(T,altitude):
     press_corr = (baro * mmHg_mb - u) / (760 - u)
     return press_corr
 
-def timeseries_quality_assurance(folder, period=365, time_label="time", datalakes=[], json_path="quality_assurance.json",
-                                 events="notes/events.csv", log=logger()):
-    log.info("Running timeseries quality assurance for {}".format(folder), indent=1)
-    files = os.listdir(folder)
-    files.sort()
-    cutoff = datetime.now() - timedelta(days=period)
-    process = []
-    log.info("Filtering files to the last {} days.".format(period), indent=2)
-    for file in files:
-        if datetime.strptime(file.split("_")[-2], '%Y%m%d') > cutoff:
-            process.append(os.path.join(folder, file))
-
-    log.info("Opening and merging {} files with xarray.".format(len(process)), indent=2)
-    with xr.open_mfdataset(process, decode_times=False) as ds:
-        log.info("Resetting QA to allow removal of conditions", indent=3)
-        for var in ds.variables.keys():
-            if "_qual" in var:
-                ds.variables[var][:] = 0
-        ds = event_quality_flags(ds, datalakes, events, log, time_label=time_label)
-        ds = advanced_quality_flags(ds, json_path, log, time_label=time_label)
-
-    log.info("Writing outputs to NetCDF files.", indent=2)
-    for file_path in process:
-        with netCDF4.Dataset(file_path, 'r+') as dset:
-            idx = np.where((ds["time"] >= dset["time"][0]) & (ds["time"] <= dset["time"][-1]))[0]
-            for var in dset.variables:
-                if "_qual" in var and time_label not in var:
-                    dset[var][:] = np.array(ds[var][idx].values)
-    return process
+def parse_events(events_file, log):
+    """Read an events file (start;stop;parameter;depth;comments) and return start/stop as epoch seconds.
+    An empty stop means the event is ongoing. Malformed rows are reported and skipped."""
+    columns = ["start", "stop", "parameter", "depth", "comments"]
+    df = pd.read_csv(events_file, sep=";", dtype=str, skipinitialspace=True, keep_default_na=False)
+    df.columns = [c.strip().lower() for c in df.columns]
+    missing = [c for c in columns if c not in df.columns]
+    if missing:
+        log.warning("Events file {} missing columns: {}, no events applied.".format(events_file, ", ".join(missing)), indent=2)
+        return None
+    df = df.apply(lambda c: c.str.strip())
+    df["line"] = df.index + 2
+    start = pd.to_datetime(df["start"], format="%Y%m%d %H:%M:%S", utc=True, errors="coerce")
+    stop = pd.to_datetime(df["stop"], format="%Y%m%d %H:%M:%S", utc=True, errors="coerce")
+    stop[df["stop"] == ""] = pd.Timestamp.now(tz="UTC")
+    valid = start.notna() & stop.notna() & (stop >= start) & (df["parameter"] != "")
+    for line in df.loc[~valid, "line"]:
+        log.warning("Invalid event on line {} of {}, skipped.".format(line, events_file), indent=3)
+    df = df[valid].copy()
+    df["start"] = np.array([t.timestamp() for t in start[valid]], dtype=float)
+    df["stop"] = np.array([t.timestamp() for t in stop[valid]], dtype=float)
+    return df
 
 
-def advanced_quality_flags(ds, json_path, log, time_label="time"):
-    log.info("Applying advanced timeseries checks.", indent=2)
-    quality_assurance_dict = json_converter(json.load(open(json_path)))
-    for var in quality_assurance_dict.keys():
-        if var in quality_assurance_dict and var in ds and var + "_qual" in ds:
-            simple = qualityassurance(np.array(ds[var]), np.array(ds[time_label]), **quality_assurance_dict[var]["simple"])
-            ds[var + "_qual"][simple > 0] = 1
-            data = np.array(ds[var]).copy()
-            data[np.array(ds[var + "_qual"].values) > 0] = np.nan
-            advanced = qualityassurance(data, np.array(ds[time_label]), **quality_assurance_dict[var]["advanced"])
-            ds[var + "_qual"][advanced > 0] = 1
-    return ds
+def event_variables(parameter, keys, time_label="time"):
+    """Map an events parameter ("All" or comma separated variable names) to the matching _qual variables."""
+    qual = [k for k in keys if k.endswith("_qual") and k != time_label + "_qual"]
+    if parameter.strip().lower() == "all":
+        return {"qual": qual, "unknown": []}
+    names = [p.strip() for p in parameter.split(",") if p.strip()]
+    return {"qual": [n + "_qual" for n in names if n + "_qual" in qual],
+            "unknown": [n for n in names if n + "_qual" not in qual]}
 
 
-def event_quality_flags(ds, datalakes, events, log, time_label="time"):
-    log.info("Applying manual timeseries checks.", indent=2)
-    df = pd.read_csv(events, sep=";")
-    df["start"] = df["start"].apply(lambda l: datetime.timestamp(datetime.strptime(l, '%Y%m%d %H:%M:%S').replace(tzinfo=timezone.utc)))
-    df["stop"] = df["stop"].apply(lambda l: datetime.timestamp(datetime.strptime(l, '%Y%m%d %H:%M:%S').replace(tzinfo=timezone.utc)))
-    for id in datalakes:
-        x = requests.get("https://api.datalakes-eawag.ch/maintenance/"+str(id))
-        if x.status_code == 200:
-            for e in x.json():
-                df.loc[len(df)] = [datetime.timestamp(datetime.strptime(e["starttime"], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)),
-                                   datetime.timestamp(datetime.strptime(e["endtime"], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)),
-                                   e["parseparameter"],
-                                   e["description"]]
-
-    time = ds.variables["time"][:]
-    for index, row in df.iterrows():
-        idx = np.where(np.logical_and(time >= int(row["start"]), time <= int(row["stop"])))
-        if row["parameter"] == "All":
-            for var in ds.variables.keys():
-                if "_qual" in var and time_label not in var:
-                    ds.variables[var][:][idx] = 1
-        else:
-            if row["parameter"] + "_qual" in ds.variables.keys():
-                ds.variables[row["parameter"] + "_qual"][:][idx] = 1
+def parse_event_depths(spec, depths, log, line):
+    """Map an events depth ("", "All", "2.5,4,7", "10-20" or "4") to indices of depths.
+    Returns None for all depths and False if the spec cannot be parsed. Values match the nearest bin within half a bin."""
+    if spec.strip().lower() in ["", "all"]:
+        return None
+    depths = np.array(depths, dtype=float)
+    tol = (np.nanmedian(np.abs(np.diff(depths))) / 2 if len(depths) > 1 else 0) + 1e-6
+    try:
+        if "-" in spec.strip()[1:]:
+            low, high = sorted(float(d) for d in spec.split("-", 1))
+            idx = np.where((depths >= low - tol) & (depths <= high + tol))[0]
+            if len(idx) == 0:
+                log.warning("No depths in range {} on events line {}".format(spec, line), indent=3)
+            return idx
+        idx = []
+        for value in [float(d) for d in spec.split(",") if d.strip()]:
+            nearest = int(np.nanargmin(np.abs(depths - value)))
+            if abs(depths[nearest] - value) <= tol:
+                idx.append(nearest)
             else:
-                log.warning("Unable to find local parameter {} to apply event.".format(row["parameter"] + "_qual"))
-    return ds
+                log.warning("Depth {} not present on events line {}".format(value, line), indent=3)
+        return np.array(sorted(set(idx)), dtype=int)
+    except ValueError:
+        log.warning("Unable to parse depth {} on events line {}, skipped.".format(spec, line), indent=3)
+        return False
 
 
 def json_converter(qa):
