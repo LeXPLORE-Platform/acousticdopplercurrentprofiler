@@ -1,3 +1,4 @@
 start;stop;parameter;depth;comments
 20210625 07:29:00;20210625 17:33:00;All;All;Maintenance
 20251002 22:01:23;20251003 05:19:20;u,v,w;3.801-10.647;Zone of strong echo (likely due to biological processes) that seem to lead to large, unrealistics vertical velocities. Such zones are usually flagged automatically by the PG3 quality test.
+20251001 23:24:08;20251002 05:49:31;u,v,w;7.109-12.51;Zone of strong echo (likely due to biological processes) that seem to lead to large, unrealistics vertical velocities. Such zones are usually flagged automatically by the PG3 quality test. @damien.bouffard: we should discuss how to deal with this recurrent problem.
